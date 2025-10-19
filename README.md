@@ -1,36 +1,100 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Arena Roguelike
 
-## Getting Started
+A roguelike game built with Next.js, React, TypeScript, and Tailwind CSS.
 
-First, run the development server:
+## 🎮 Project Overview
+
+This is a roguelike game project where players navigate through procedurally generated dungeons, battle enemies, collect items, and try to survive as long as possible.
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Node.js 18+ installed
+- npm, yarn, pnpm, or bun package manager
+
+### Installation
+
+The project is already set up with all dependencies installed. To start development:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser to see the game.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Available Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `npm run dev` - Start the development server
+- `npm run build` - Build the production application
+- `npm start` - Start the production server
+- `npm run lint` - Run ESLint to check code quality
 
-## Learn More
+## 🏗️ Tech Stack
 
-To learn more about Next.js, take a look at the following resources:
+- **Framework:** Next.js 15 (App Router)
+- **UI Library:** React 19
+- **Language:** TypeScript 5
+- **Styling:** Tailwind CSS 4
+- **Linting:** ESLint 9
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 📁 Project Structure
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+arena-roguelike/
+├── app/                  # Next.js app directory
+│   ├── page.tsx         # Main game page
+│   ├── layout.tsx       # Root layout
+│   └── globals.css      # Global styles
+├── public/              # Static assets
+├── package.json         # Dependencies and scripts
+└── tsconfig.json        # TypeScript configuration
+```
 
-## Deploy on Vercel
+## 🎯 Recommended Next Steps
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. **Create Game Components**
+   - Player character
+   - Enemies
+   - Map/Grid system
+   - Inventory system
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+2. **Implement Game Logic**
+   - Turn-based movement
+   - Combat system
+   - Item collection
+   - Procedural generation
+
+3. **Add Game State Management**
+   - React Context or Zustand for global state
+   - Player stats (health, items, etc.)
+   - Game progression
+
+4. **Create Game Assets**
+   - Character sprites or ASCII art
+   - Sound effects
+   - UI elements
+
+## 📚 Resources
+
+- [Next.js Documentation](https://nextjs.org/docs)
+- [React Documentation](https://react.dev)
+- [Tailwind CSS Documentation](https://tailwindcss.com/docs)
+- [TypeScript Documentation](https://www.typescriptlang.org/docs)
+
+## 🎨 Game Features (To Be Implemented)
+
+- [ ] Grid-based movement system
+- [ ] Turn-based combat
+- [ ] Procedural dungeon generation
+- [ ] Enemy AI
+- [ ] Inventory and items
+- [ ] Character progression
+- [ ] Multiple levels/floors
+- [ ] Save/Load system
+- [ ] Sound effects and music
+- [ ] High scores
+
+---
+
+Built with ❤️ using Next.js
