@@ -94,11 +94,88 @@ export function spawnEnemy(enemies: Enemy[], waveState: WaveState, type: EnemyTy
 }
 
 /**
+ * Apply separation forces to prevent enemies from overlapping
+ */
+function applyEnemySeparation(enemies: Enemy[], deltaTime: number): void {
+  const timeMultiplier = deltaTime / 16.67; // Normalize to 60 FPS baseline
+  const separationForce = 0.5; // How strong the separation force is
+  const minDistance = 12; // Minimum distance between enemy centers (size + buffer)
+  
+  for (let i = 0; i < enemies.length; i++) {
+    const enemy1 = enemies[i];
+    let separationX = 0;
+    let separationY = 0;
+    let separationCount = 0;
+    
+    for (let j = 0; j < enemies.length; j++) {
+      if (i === j) continue;
+      
+      const enemy2 = enemies[j];
+      const dx = enemy1.x - enemy2.x;
+      const dy = enemy1.y - enemy2.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      
+      // If enemies are too close, apply separation force
+      if (distance > 0 && distance < minDistance) {
+        const separationStrength = (minDistance - distance) / minDistance;
+        const normalizedDx = dx / distance;
+        const normalizedDy = dy / distance;
+        
+        separationX += normalizedDx * separationStrength;
+        separationY += normalizedDy * separationStrength;
+        separationCount++;
+      }
+    }
+    
+    // Apply separation force if there are overlapping enemies
+    if (separationCount > 0) {
+      const avgSeparationX = separationX / separationCount;
+      const avgSeparationY = separationY / separationCount;
+      
+      enemy1.x += avgSeparationX * separationForce * timeMultiplier;
+      enemy1.y += avgSeparationY * separationForce * timeMultiplier;
+    }
+  }
+}
+
+/**
+ * Keep enemies within the game boundaries
+ */
+function enforceEnemyBoundaries(enemies: Enemy[]): void {
+  const margin = 5; // Small margin from the edge
+  
+  for (const enemy of enemies) {
+    const enemySize = enemy.size || 5; // Default size if not defined
+    
+    // Check left boundary
+    if (enemy.x - enemySize < margin) {
+      enemy.x = margin + enemySize;
+    }
+    
+    // Check right boundary
+    if (enemy.x + enemySize > CANVAS_WIDTH - margin) {
+      enemy.x = CANVAS_WIDTH - margin - enemySize;
+    }
+    
+    // Check top boundary
+    if (enemy.y - enemySize < margin) {
+      enemy.y = margin + enemySize;
+    }
+    
+    // Check bottom boundary
+    if (enemy.y + enemySize > CANVAS_HEIGHT - margin) {
+      enemy.y = CANVAS_HEIGHT - margin - enemySize;
+    }
+  }
+}
+
+/**
  * Update all enemy positions based on their type (delta time based)
  */
 export function updateEnemies(enemies: Enemy[], player: Player, deltaTime: number): void {
   const timeMultiplier = deltaTime / 16.67; // Normalize to 60 FPS baseline
   
+  // First, update enemy movement toward player
   for (const enemy of enemies) {
     const dx = player.x - enemy.x;
     const dy = player.y - enemy.y;
@@ -129,6 +206,12 @@ export function updateEnemies(enemies: Enemy[], player: Player, deltaTime: numbe
       // Otherwise: maintain distance (strafe or hold position)
     }
   }
+  
+  // Then, apply separation forces to prevent overlapping
+  applyEnemySeparation(enemies, deltaTime);
+  
+  // Finally, enforce boundaries to keep enemies in the game area
+  enforceEnemyBoundaries(enemies);
 }
 
 /**
