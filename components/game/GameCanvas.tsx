@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 // Configuration and types
 import { BASE_STATS, CANVAS_WIDTH, CANVAS_HEIGHT } from '@/lib/game/config';
 import { GameState, Bullet, Enemy, XPOrb, EnemyProjectile } from '@/lib/game/types';
+import { ChampionId } from '@/lib/game/champions/catalog';
 import { GameSettings, loadSettings, saveSettings } from '@/lib/game/settings';
 
 // Game systems
@@ -47,11 +48,12 @@ import { createShopState, shouldShopAppear, updateShopAppearance, openShop, clos
 
 interface GameCanvasProps {
   onBackToMenu?: () => void;
+  selectedChampion: ChampionId;
 }
 
 type ModalState = 'none' | 'stats' | 'settings' | 'shop';
 
-export default function GameCanvas({ onBackToMenu }: GameCanvasProps) {
+export default function GameCanvas({ onBackToMenu, selectedChampion }: GameCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   
@@ -147,7 +149,7 @@ export default function GameCanvas({ onBackToMenu }: GameCanvasProps) {
     const TARGET_FPS = 60;
     const FRAME_TIME = 1000 / TARGET_FPS; // ~16.67ms per frame
 
-    const player = createPlayer();
+    const player = createPlayer(selectedChampion);
     const bullets: Bullet[] = [];
     const enemies: Enemy[] = [];
     const enemyProjectiles: EnemyProjectile[] = [];
@@ -309,7 +311,7 @@ export default function GameCanvas({ onBackToMenu }: GameCanvasProps) {
       updatePlayerIframes(player, now);
       updatePlayerMovement(player, keys, deltaTime);
 
-      const fireRate = BASE_STATS.bullet.fireRate * player.fireRateMultiplier;
+      const fireRate = 1000 / player.championAttackSpeed; // Convert attacks per second to milliseconds between shots
       if (now - lastFireTime >= fireRate) {
         spawnBullets(bullets, player, cursor);
         lastFireTime = now;
@@ -425,7 +427,6 @@ export default function GameCanvas({ onBackToMenu }: GameCanvasProps) {
 
       // Update HUD state for React
       if (Math.random() < 0.1) { // Update HUD state less frequently
-        const fireRate = BASE_STATS.bullet.fireRate * player.fireRateMultiplier;
         setHUDState({
           health: player.health,
           maxHealth: player.maxHealth,
@@ -433,9 +434,9 @@ export default function GameCanvas({ onBackToMenu }: GameCanvasProps) {
           xp: player.xp,
           xpToNextLevel: player.xpToNextLevel,
           survivalTime: Math.floor(elapsed / 1000),
-          fireRate: 1000 / fireRate,
+          fireRate: player.championAttackSpeed,
           moveSpeed: getPlayerSpeed(player),
-          damage: BASE_STATS.bullet.damage * player.damageMultiplier,
+          damage: player.championDamage,
           multishot: player.multishot,
           currentWave: waveState.currentWave,
           magnetRadius: BASE_STATS.xp.magnetRadius * player.magnetMultiplier,
@@ -469,7 +470,7 @@ export default function GameCanvas({ onBackToMenu }: GameCanvasProps) {
       getReadyEndTime = 0;
       waveCompleteEndTime = 0;
       
-      resetPlayer(player);
+      resetPlayer(player, selectedChampion);
       bullets.length = 0;
       enemies.length = 0;
       enemyProjectiles.length = 0;

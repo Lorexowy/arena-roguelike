@@ -7,34 +7,42 @@
 import { BASE_STATS, LEVEL_CONFIG, CANVAS_WIDTH, CANVAS_HEIGHT, SHOP_ITEM_CONFIG } from '../config';
 import { Player, DamageNumber } from '../types';
 import { spawnDamageNumber } from './damageNumbers';
-import { playLevelUpSound } from '../audio/sounds';
+import { playLevelUpSound, playPlayerDamageSound } from '../audio/sounds';
+import { getChampion, ChampionId } from '../champions/catalog';
 
 /**
- * Create initial player state
+ * Create initial player state with champion stats
  */
-export function createPlayer(): Player {
+export function createPlayer(championId: ChampionId = 'sascha'): Player {
+  const champion = getChampion(championId);
+  
   return {
     x: CANVAS_WIDTH / 2,
     y: CANVAS_HEIGHT / 2,
     radius: BASE_STATS.player.radius,
-    baseSpeed: BASE_STATS.player.moveSpeed,
-    speedMultiplier: 1.0,
-    health: BASE_STATS.player.maxHealth,
-    maxHealth: BASE_STATS.player.maxHealth,
+    baseSpeed: champion.stats.moveSpeed, // Use absolute value, not multiplier
+    speedMultiplier: 1.0, // Reset to 1.0 since we're using absolute values
+    health: champion.stats.maxHealth,
+    maxHealth: champion.stats.maxHealth,
     iframes: false,
     iframeEndTime: 0,
     level: 1,
     xp: 0,
     xpToNextLevel: LEVEL_CONFIG.xpPerLevel(1),
-    multishot: 1,
-    fireRateMultiplier: 1.0,
-    damageMultiplier: 1.0,
+    multishot: champion.stats.multishot,
+    fireRateMultiplier: 1.0, // Reset to 1.0 since we'll calculate fire rate differently
+    damageMultiplier: 1.0, // Reset to 1.0 since we'll use absolute damage
     magnetMultiplier: 1.0,
-    critChance: 0.0,
+    critChance: champion.stats.critChance,
     money: 0,
     lifesteal: 0.0,
     hpRegenRate: 0.0,
     lastDamageTakenTime: 0,
+    championId: championId,
+    bulletRange: champion.stats.bulletRange,
+    // Store champion stats for calculations
+    championDamage: champion.stats.damage,
+    championAttackSpeed: champion.stats.attackSpeed,
   };
 }
 
@@ -94,6 +102,9 @@ export function damagePlayer(
   // Track damage time for HP regen delay
   player.lastDamageTakenTime = now;
 
+  // Play damage sound effect
+  playPlayerDamageSound();
+
   // Spawn red damage indicator above player
   if (damageNumbers) {
     spawnDamageNumber(damageNumbers, player.x, player.y - player.radius - 10, damage, false, now, true);
@@ -123,27 +134,34 @@ export function addXP(player: Player, amount: number): boolean {
 }
 
 /**
- * Reset player to initial state
+ * Reset player to initial state with champion stats
  */
-export function resetPlayer(player: Player): void {
+export function resetPlayer(player: Player, championId: ChampionId = 'sascha'): void {
+  const champion = getChampion(championId);
+  
   player.x = CANVAS_WIDTH / 2;
   player.y = CANVAS_HEIGHT / 2;
-  player.health = BASE_STATS.player.maxHealth;
-  player.maxHealth = BASE_STATS.player.maxHealth;
+  player.health = champion.stats.maxHealth;
+  player.maxHealth = champion.stats.maxHealth;
   player.iframes = false;
   player.level = 1;
   player.xp = 0;
   player.xpToNextLevel = LEVEL_CONFIG.xpPerLevel(1);
-  player.multishot = 1;
-  player.fireRateMultiplier = 1.0;
-  player.damageMultiplier = 1.0;
-  player.speedMultiplier = 1.0;
+  player.multishot = champion.stats.multishot;
+  player.fireRateMultiplier = 1.0; // Reset to 1.0 since we use absolute values
+  player.damageMultiplier = 1.0; // Reset to 1.0 since we use absolute values
+  player.baseSpeed = champion.stats.moveSpeed; // Use absolute value
+  player.speedMultiplier = 1.0; // Reset to 1.0 since we use absolute values
   player.magnetMultiplier = 1.0;
-  player.critChance = 0.0;
+  player.critChance = champion.stats.critChance;
   player.money = 0;
   player.lifesteal = 0.0;
   player.hpRegenRate = 0.0;
   player.lastDamageTakenTime = 0;
+  player.championId = championId;
+  player.bulletRange = champion.stats.bulletRange;
+  player.championDamage = champion.stats.damage;
+  player.championAttackSpeed = champion.stats.attackSpeed;
 }
 
 /**

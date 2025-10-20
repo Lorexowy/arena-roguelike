@@ -117,8 +117,8 @@ export function applyUpgrade(
       upgradeCount.multishot += Math.floor(tierMult);
       break;
     case 'attackSpeed':
-      // Tier I: 12% faster (0.88x), Tier II: 18% faster (0.82x), Tier III: 24% faster (0.76x)
-      player.fireRateMultiplier *= Math.pow(0.88, tierMult);
+      // Tier I: +0.2 attacks/sec, Tier II: +0.3 attacks/sec, Tier III: +0.4 attacks/sec
+      player.championAttackSpeed += 0.2 * tierMult;
       upgradeCount.attackSpeed++;
       break;
     case 'magnet':
@@ -127,13 +127,13 @@ export function applyUpgrade(
       upgradeCount.magnet++;
       break;
     case 'moveSpeed':
-      // Tier I: 11% faster, Tier II: 16.5% faster, Tier III: 22% faster
-      player.speedMultiplier *= 1 + (0.11 * tierMult);
+      // Tier I: +0.2 speed, Tier II: +0.3 speed, Tier III: +0.4 speed
+      player.baseSpeed += 0.2 * tierMult;
       upgradeCount.moveSpeed++;
       break;
     case 'damage':
-      // Tier I: 15% more, Tier II: 22.5% more, Tier III: 30% more
-      player.damageMultiplier *= 1 + (0.15 * tierMult);
+      // Tier I: +0.3 damage, Tier II: +0.45 damage, Tier III: +0.6 damage
+      player.championDamage += 0.3 * tierMult;
       upgradeCount.damage++;
       break;
     case 'critChance':

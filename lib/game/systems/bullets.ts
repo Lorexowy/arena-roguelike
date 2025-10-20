@@ -26,7 +26,8 @@ export function spawnBullets(
   if (magnitude <= 1) return;
 
   const baseAngle = Math.atan2(dy, dx);
-  const bulletDamage = BASE_STATS.bullet.damage * player.damageMultiplier;
+  const isCrit = Math.random() < player.critChance;
+  const bulletDamage = player.championDamage * (isCrit ? 2 : 1);
 
   // Spawn multiple bullets for multishot
   for (let i = 0; i < player.multishot; i++) {
@@ -45,6 +46,9 @@ export function spawnBullets(
       vx: Math.cos(angle) * BASE_STATS.bullet.speed,
       vy: Math.sin(angle) * BASE_STATS.bullet.speed,
       damage: bulletDamage,
+      isCrit: isCrit,
+      maxRange: player.bulletRange,
+      distanceTraveled: 0,
     });
   }
 
@@ -60,8 +64,19 @@ export function updateBullets(bullets: Bullet[], deltaTime: number): void {
   
   for (let i = bullets.length - 1; i >= 0; i--) {
     const bullet = bullets[i];
+    
+    // Calculate distance traveled this frame
+    const frameDistance = Math.sqrt(bullet.vx * bullet.vx + bullet.vy * bullet.vy) * timeMultiplier;
+    bullet.distanceTraveled = (bullet.distanceTraveled || 0) + frameDistance;
+    
     bullet.x += bullet.vx * timeMultiplier;
     bullet.y += bullet.vy * timeMultiplier;
+
+    // Remove bullets that exceed their range (for champions with limited range)
+    if (bullet.maxRange && bullet.distanceTraveled >= bullet.maxRange) {
+      bullets.splice(i, 1);
+      continue;
+    }
 
     // Remove off-screen bullets
     if (bullet.x < -10 || bullet.x > CANVAS_WIDTH + 10 || 

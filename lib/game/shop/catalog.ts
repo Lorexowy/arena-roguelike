@@ -53,7 +53,7 @@ export const SHOP_CATALOG: ShopEntry[] = [
     iconAlt: 'Dagger',
     isAvailable: () => true, // Always available, stacks infinitely
     apply: (player) => {
-      player.fireRateMultiplier *= 0.8333; // 20% faster = ×0.8333 multiplier
+      player.championAttackSpeed += 0.2; // +0.2 attacks per second
     },
   },
   {
@@ -67,7 +67,7 @@ export const SHOP_CATALOG: ShopEntry[] = [
     iconAlt: 'Boots of Speed',
     isAvailable: () => true, // Always available, stacks infinitely
     apply: (player) => {
-      player.speedMultiplier *= 1.2; // 20% faster
+      player.baseSpeed += 0.2; // +0.2 movement speed
     },
   },
   

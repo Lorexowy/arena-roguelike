@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import GameCanvas from '@/components/game/GameCanvas';
 import { GameSettings, loadSettings, saveSettings } from '@/lib/game/settings';
+import { getAllChampions, ChampionId } from '@/lib/game/champions/catalog';
 
 /**
  * Home Page / Main Menu
@@ -14,12 +15,21 @@ import { GameSettings, loadSettings, saveSettings } from '@/lib/game/settings';
  */
 export default function Home() {
   const [gameStarted, setGameStarted] = useState(false);
+  const [showChampionSelection, setShowChampionSelection] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
+  const [selectedChampion, setSelectedChampion] = useState<ChampionId>('sascha');
   const [settings, setSettings] = useState<GameSettings>(loadSettings());
 
   /**
-   * Start the game
-   * Hides menu and mounts the game canvas
+   * Show champion selection
+   */
+  const handleShowChampionSelection = () => {
+    setShowChampionSelection(true);
+  };
+
+  /**
+   * Start the game with selected champion
+   * Hides champion selection and mounts the game canvas
    */
   const handleStartGame = () => {
     setGameStarted(true);
@@ -32,6 +42,14 @@ export default function Home() {
    */
   const handleBackToMenu = () => {
     setGameStarted(false);
+    setShowChampionSelection(false);
+  };
+
+  /**
+   * Return to main menu from champion selection
+   */
+  const handleBackToMainMenu = () => {
+    setShowChampionSelection(false);
   };
 
   /**
@@ -58,7 +76,294 @@ export default function Home() {
 
   // If game is started, render the game canvas
   if (gameStarted) {
-    return <GameCanvas onBackToMenu={handleBackToMenu} />;
+    return <GameCanvas onBackToMenu={handleBackToMenu} selectedChampion={selectedChampion} />;
+  }
+
+  // If champion selection is shown, render champion selection screen
+  if (showChampionSelection) {
+    return (
+      <div className="menu-container">
+        <main className="menu-content">
+          {/* Game Title */}
+          <h1 className="title">
+            Arena Roguelike
+          </h1>
+          
+          <p className="subtitle">
+            Choose Your Champion
+          </p>
+
+          {/* Champion Selection */}
+          <div className="champion-selection">
+            <div className="champion-grid">
+              {getAllChampions().map((champion) => (
+                <div
+                  key={champion.id}
+                  className={`champion-card ${selectedChampion === champion.id ? 'selected' : ''}`}
+                  onClick={() => setSelectedChampion(champion.id as ChampionId)}
+                >
+                  <div className="champion-icon">
+                    {champion.iconSrc ? (
+                      <img src={champion.iconSrc} alt={champion.iconAlt} />
+                    ) : (
+                      <div className="champion-placeholder">
+                        {champion.name.charAt(0)}
+                      </div>
+                    )}
+                  </div>
+                  <div className="champion-info">
+                    <h4 className="champion-name">{champion.name}</h4>
+                    <p className="champion-description">{champion.description}</p>
+                    <div className="champion-stats">
+                      <div className="stat-row">
+                        <span className="stat-label">Damage:</span>
+                        <span className="stat-value">{champion.stats.damage}x</span>
+                      </div>
+                      <div className="stat-row">
+                        <span className="stat-label">Attack Speed:</span>
+                        <span className="stat-value">{champion.stats.attackSpeed}x</span>
+                      </div>
+                      <div className="stat-row">
+                        <span className="stat-label">Multishot:</span>
+                        <span className="stat-value">{champion.stats.multishot}x</span>
+                      </div>
+                      <div className="stat-row">
+                        <span className="stat-label">Crit Chance:</span>
+                        <span className="stat-value">{(champion.stats.critChance * 100).toFixed(0)}%</span>
+                      </div>
+                      <div className="stat-row">
+                        <span className="stat-label">Move Speed:</span>
+                        <span className="stat-value">{champion.stats.moveSpeed}x</span>
+                      </div>
+                      {champion.stats.bulletRange && (
+                        <div className="stat-row">
+                          <span className="stat-label">Range:</span>
+                          <span className="stat-value">{champion.stats.bulletRange}px</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="menu-buttons">
+            <button 
+              onClick={handleStartGame}
+              className="menu-button primary"
+            >
+              ▶ Start as {getAllChampions().find(c => c.id === selectedChampion)?.name}
+            </button>
+            
+            <button 
+              onClick={handleBackToMainMenu}
+              className="menu-button secondary"
+            >
+              ← Back to Menu
+            </button>
+          </div>
+        </main>
+
+        <style jsx>{`
+          .menu-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(to bottom, #0a0e1a 0%, #1a1e2e 100%);
+            padding: 20px;
+          }
+
+          .menu-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+            max-width: 800px;
+            width: 100%;
+          }
+
+          .title {
+            font-size: 48px;
+            font-weight: 800;
+            text-align: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 0;
+            text-shadow: 0 0 40px rgba(102, 126, 234, 0.3);
+            letter-spacing: -1px;
+          }
+
+          .subtitle {
+            font-size: 18px;
+            color: #888;
+            text-align: center;
+            margin: -15px 0 0 0;
+            font-family: monospace;
+            letter-spacing: 1px;
+          }
+
+          /* Champion Selection */
+          .champion-selection {
+            width: 100%;
+            margin: 20px 0;
+          }
+
+          .champion-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+          }
+
+          .champion-card {
+            background: linear-gradient(135deg, #1a1e2e 0%, #2a2e3e 100%);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+          }
+
+          .champion-card:hover {
+            border-color: rgba(74, 158, 255, 0.5);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+          }
+
+          .champion-card.selected {
+            border-color: #4a9eff;
+            background: linear-gradient(135deg, #1a2e4a 0%, #2a3e5a 100%);
+            box-shadow: 0 0 20px rgba(74, 158, 255, 0.3);
+          }
+
+          .champion-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+            border: 3px solid rgba(255, 255, 255, 0.2);
+          }
+
+          .champion-icon img {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            object-fit: cover;
+          }
+
+          .champion-placeholder {
+            font-size: 32px;
+            font-weight: bold;
+            color: #4a9eff;
+          }
+
+          .champion-info {
+            width: 100%;
+          }
+
+          .champion-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: white;
+            margin: 0 0 8px 0;
+          }
+
+          .champion-description {
+            font-size: 14px;
+            color: #aaa;
+            margin: 0 0 15px 0;
+            line-height: 1.4;
+          }
+
+          .champion-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+          }
+
+          .stat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+          }
+
+          .stat-label {
+            color: #888;
+            font-weight: 500;
+          }
+
+          .stat-value {
+            color: #4a9eff;
+            font-weight: 600;
+          }
+
+          .menu-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 100%;
+            margin-top: 20px;
+          }
+
+          .menu-button {
+            padding: 16px 32px;
+            font-size: 18px;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+          }
+
+          .menu-button.primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+          }
+
+          .menu-button.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+          }
+
+          .menu-button.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ccc;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+          }
+
+          .menu-button.secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+          }
+
+          @media (max-width: 768px) {
+            .champion-grid {
+              grid-template-columns: 1fr;
+            }
+            
+            .title {
+              font-size: 36px;
+            }
+          }
+        `}</style>
+      </div>
+    );
   }
 
   // Otherwise, show the Start Menu
@@ -76,9 +381,9 @@ export default function Home() {
 
         {/* Main Menu Buttons */}
         <div className="menu-buttons">
-          {/* Play Button - starts the game */}
+          {/* Play Button - shows champion selection */}
           <button 
-            onClick={handleStartGame}
+            onClick={handleShowChampionSelection}
             className="menu-button primary"
           >
             ▶ Play
@@ -207,6 +512,7 @@ export default function Home() {
           font-family: monospace;
           letter-spacing: 1px;
         }
+
 
         .menu-buttons {
           display: flex;

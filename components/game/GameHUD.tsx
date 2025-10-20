@@ -78,34 +78,12 @@ export default function GameHUD({
   const displayHealth = Math.floor(health);
   const displayMaxHealth = Math.floor(maxHealth);
 
-  // Generate wave progress indicators
-  const generateWaveProgress = () => {
-    const waves = [];
-    const maxVisibleWaves = 5; // Show up to 5 waves
-    const startWave = Math.max(1, currentWave - maxVisibleWaves + 1);
-    
-    for (let i = startWave; i <= currentWave; i++) {
-      const isCompleted = i < currentWave;
-      const isCurrent = i === currentWave;
-      
-      waves.push(
-        <div 
-          key={i} 
-          className={`wave-indicator ${isCompleted ? 'completed' : ''} ${isCurrent ? 'current' : ''}`}
-        >
-          {isCompleted ? '✓' : i}
-        </div>
-      );
-    }
-    
-    return waves;
-  };
 
   return (
     <div className="game-hud">
       {/* Left Side: Vertical HP Bar */}
       <div className="hud-hp-vertical">
-        <div className="hp-text-vertical">HP</div>
+        <div className="hp-text-horizontal">HP</div>
         <div className="hp-bar-container-vertical">
           <div 
             className="hp-bar-fill-vertical" 
@@ -164,12 +142,6 @@ export default function GameHUD({
         )}
       </div>
 
-      {/* Bottom: Wave Progress */}
-      <div className="hud-wave-progress">
-        <div className="wave-progress-container">
-          {generateWaveProgress()}
-        </div>
-      </div>
 
       {/* Bottom: XP Bar */}
       <div className="hud-xp-bar">
@@ -211,14 +183,12 @@ export default function GameHUD({
           gap: 4px;
         }
 
-        .hp-text-vertical {
+        .hp-text-horizontal {
           font-size: 12px;
           font-weight: 700;
           color: white;
           text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
           font-family: monospace;
-          writing-mode: vertical-rl;
-          text-orientation: mixed;
         }
 
         .hp-bar-container-vertical {
@@ -411,56 +381,6 @@ export default function GameHUD({
           background: rgba(20, 26, 42, 0.9);
         }
 
-        /* Wave Progress */
-        .hud-wave-progress {
-          position: absolute;
-          bottom: 28px;
-          left: 50%;
-          transform: translateX(-50%);
-        }
-
-        .wave-progress-container {
-          display: flex;
-          gap: 6px;
-          background: rgba(0, 0, 0, 0.8);
-          padding: 6px 12px;
-          border-radius: 8px;
-          border: 2px solid rgba(255, 255, 255, 0.2);
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-        }
-
-        .wave-indicator {
-          width: 24px;
-          height: 24px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-family: monospace;
-          font-size: 10px;
-          font-weight: bold;
-          color: white;
-          background: rgba(100, 100, 100, 0.8);
-          border: 2px solid #666;
-          text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
-          transition: all 0.3s ease;
-        }
-
-        .wave-indicator.completed {
-          background: rgba(68, 255, 68, 0.9);
-          border-color: #44ff44;
-          color: #000;
-          text-decoration: line-through;
-          box-shadow: 0 0 12px rgba(68, 255, 68, 0.6);
-        }
-
-        .wave-indicator.current {
-          background: rgba(255, 170, 68, 0.9);
-          border-color: #ffaa44;
-          color: #000;
-          box-shadow: 0 0 8px rgba(255, 170, 68, 0.6);
-          transform: scale(1.05);
-        }
 
         @media (max-width: 768px) {
           .stat-pill {

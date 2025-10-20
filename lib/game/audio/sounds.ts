@@ -36,6 +36,12 @@ export const GAME_SOUNDS: SoundDefinition[] = [
     volume: 0.5,          // Medium volume for special event
     preload: true,
   },
+  {
+    name: 'player_damage',
+    path: '/sounds/player_damage.mp3',
+    volume: 0.4,          // Medium volume for damage feedback
+    preload: true,
+  },
   // Future sounds can be added here:
   // {
   //   name: 'enemy_hit',
@@ -107,4 +113,12 @@ export function playLevelUpSound(): void {
 export function playMerchantArrivalSound(): void {
   console.log('playMerchantArrivalSound called');
   playSound('merchant_arrival');
+}
+
+/**
+ * Convenience function for player damage sound
+ */
+export function playPlayerDamageSound(): void {
+  console.log('playPlayerDamageSound called');
+  playSound('player_damage');
 }

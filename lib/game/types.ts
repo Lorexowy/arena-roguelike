@@ -17,6 +17,9 @@ export interface Bullet {
   vx: number;
   vy: number;
   damage: number;
+  isCrit: boolean;
+  maxRange?: number; // Optional: for champions with limited range
+  distanceTraveled?: number; // Track distance for range limiting
 }
 
 export interface EnemyProjectile {
@@ -81,6 +84,10 @@ export interface Player {
   lifesteal: number;           // 0.0 to 0.5 (0% to 50% cap)
   hpRegenRate: number;         // HP per second
   lastDamageTakenTime: number; // Timestamp for regen delay
+  championId: string;          // Track which champion is being played
+  bulletRange?: number;        // Optional: for champions with limited range
+  championDamage: number;      // Champion's base damage value
+  championAttackSpeed: number; // Champion's base attack speed value
 }
 
 export interface WaveState {

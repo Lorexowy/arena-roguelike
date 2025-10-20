@@ -32,8 +32,8 @@ export const SHOP_CONFIG = {
   PURCHASE_LIMIT: 1,              // Max purchases per visit
   BASE_REROLL_COST: 5,            // First reroll cost
   REROLL_COST_INCREMENT: 5,       // Cost increase per reroll
-  PRICE_SCALING_WAVES: 3,         // Apply scaling every 3 waves (slower scaling)
-  PRICE_SCALING_MULTIPLIER: 1.15, // +15% per interval (more meaningful scaling)
+  PRICE_SCALING_WAVES: 2,         // Apply scaling every 2 waves (faster scaling)
+  PRICE_SCALING_MULTIPLIER: 1.20, // +20% per interval (more aggressive scaling)
 };
 
 /**
