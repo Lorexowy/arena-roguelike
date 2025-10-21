@@ -78,10 +78,10 @@ export const SHOP_CATALOG: ShopEntry[] = [
     name: 'Ruby Crystal',
     description: '+25 max HP and heal +25 HP',
     rarity: 'common',
-    baseCost: 9, // Reduced from 20 to 9
+    baseCost: 9, 
     iconSrc: '/icons/shop/ruby_crystal.webp',
     iconAlt: 'Ruby Crystal',
-    isAvailable: () => true, // Always available, can stack
+    isAvailable: () => true,
     apply: (player) => {
       player.maxHealth += 25;
       player.health = Math.min(player.health + 25, player.maxHealth);
@@ -93,12 +93,12 @@ export const SHOP_CATALOG: ShopEntry[] = [
     name: 'Rejuvenation Bead',
     description: '+0.2 HP/sec after 3s without damage',
     rarity: 'uncommon',
-    baseCost: 12, // Reduced from 35 to 12
+    baseCost: 12,
     iconSrc: '/icons/shop/rejuvenation_bead.webp',
     iconAlt: 'Rejuvenation Bead',
-    isAvailable: () => true, // Always available, stacks
+    isAvailable: () => true,
     apply: (player) => {
-      player.hpRegenRate += 0.2; // Stacks additively
+      player.hpRegenRate += 0.2;
     },
   },
   {
@@ -107,7 +107,7 @@ export const SHOP_CATALOG: ShopEntry[] = [
     name: 'Vampiric Scepter',
     description: '+10% lifesteal (max 50%)',
     rarity: 'uncommon',
-    baseCost: 12, // Reduced from 40 to 12
+    baseCost: 12,
     iconSrc: '/icons/shop/vampiric_scepter.webp',
     iconAlt: 'Vampiric Scepter',
     isAvailable: (player) => player.lifesteal < SHOP_ITEM_CONFIG.lifestealCap,

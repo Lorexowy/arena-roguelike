@@ -5,6 +5,7 @@
  */
 
 import { VISUAL_SCALE } from '../config';
+import { Camera } from '../types';
 
 export interface MoneyIndicator {
   x: number;
@@ -82,13 +83,21 @@ export function updateMoneyIndicators(pool: MoneyIndicator[], now: number, delta
 }
 
 /**
- * Draw money indicators
+ * Draw money indicators (with camera transform)
  */
 export function drawMoneyIndicators(
   ctx: CanvasRenderingContext2D,
   pool: MoneyIndicator[],
-  now: number
+  now: number,
+  camera: Camera
 ): void {
+  ctx.save();
+  
+  // Apply camera offset to match game world
+  const viewportHalfW = camera.viewportWidth / 2;
+  const viewportHalfH = camera.viewportHeight / 2;
+  ctx.translate(-camera.x + viewportHalfW, -camera.y + viewportHalfH);
+  
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
@@ -120,5 +129,6 @@ export function drawMoneyIndicators(
   }
 
   ctx.textAlign = 'left';
+  ctx.restore();
 }
 

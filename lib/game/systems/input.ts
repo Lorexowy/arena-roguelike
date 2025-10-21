@@ -4,8 +4,8 @@
  * Manages keyboard and mouse input handling.
  */
 
-import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../config';
-import { Cursor } from '../types';
+import { CANVAS_WIDTH, CANVAS_HEIGHT, WORLD_WIDTH, WORLD_HEIGHT } from '../config';
+import { Cursor, Camera } from '../types';
 
 /**
  * Create keyboard state tracker
@@ -15,12 +15,12 @@ export function createKeyState(): { [key: string]: boolean } {
 }
 
 /**
- * Create cursor state
+ * Create cursor state (in world space)
  */
 export function createCursor(): Cursor {
   return {
-    x: CANVAS_WIDTH / 2,
-    y: CANVAS_HEIGHT / 2 - 20,
+    x: WORLD_WIDTH / 2,
+    y: WORLD_HEIGHT / 2 - 20,
     isValid: false,
   };
 }
@@ -73,15 +73,22 @@ export function screenToLogicalCoords(
 
 /**
  * Setup mouse event listeners
+ * Uses a function to get camera state for world-space conversion
  */
 export function setupMouseListeners(
   canvas: HTMLCanvasElement,
-  cursor: Cursor
+  cursor: Cursor,
+  getCamera: () => Camera
 ): () => void {
   const handleMouseMove = (e: MouseEvent) => {
     const coords = screenToLogicalCoords(canvas, e.clientX, e.clientY);
-    cursor.x = coords.x;
-    cursor.y = coords.y;
+    const camera = getCamera();
+    
+    // Convert screen coords to world coords
+    const viewportHalfW = camera.viewportWidth / 2;
+    const viewportHalfH = camera.viewportHeight / 2;
+    cursor.x = coords.x - viewportHalfW + camera.x;
+    cursor.y = coords.y - viewportHalfH + camera.y;
     cursor.isValid = true;
   };
 

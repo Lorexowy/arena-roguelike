@@ -62,6 +62,15 @@ export interface WaveModifier {
   multiplier: number;
 }
 
+export interface Camera {
+  x: number;              // Camera center X in world space
+  y: number;              // Camera center Y in world space
+  worldWidth: number;     // Total world width
+  worldHeight: number;    // Total world height
+  viewportWidth: number;  // What player sees (canvas width)
+  viewportHeight: number; // What player sees (canvas height)
+}
+
 export interface Player {
   x: number;
   y: number;

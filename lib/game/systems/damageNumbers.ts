@@ -5,7 +5,7 @@
  */
 
 import { DAMAGE_NUMBER_CONFIG, VISUAL_SCALE } from '../config';
-import { DamageNumber } from '../types';
+import { DamageNumber, Camera } from '../types';
 
 /**
  * Create damage number pool
@@ -74,13 +74,21 @@ export function updateDamageNumbers(pool: DamageNumber[], now: number, deltaTime
 }
 
 /**
- * Draw damage numbers
+ * Draw damage numbers (with camera transform)
  */
 export function drawDamageNumbers(
   ctx: CanvasRenderingContext2D,
   pool: DamageNumber[],
-  now: number
+  now: number,
+  camera: Camera
 ): void {
+  ctx.save();
+  
+  // Apply camera offset to match game world
+  const viewportHalfW = camera.viewportWidth / 2;
+  const viewportHalfH = camera.viewportHeight / 2;
+  ctx.translate(-camera.x + viewportHalfW, -camera.y + viewportHalfH);
+  
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
@@ -127,5 +135,6 @@ export function drawDamageNumbers(
   }
 
   ctx.textAlign = 'left';
+  ctx.restore();
 }
 

@@ -11,6 +11,7 @@ import { GameSettings, loadSettings, saveSettings } from '@/lib/game/settings';
 // Game systems
 import { createPlayer, updatePlayerMovement, updatePlayerIframes, addXP, resetPlayer, getPlayerSpeed, getPlayerSpeedDisplay, updatePlayerRegeneration } from '@/lib/game/systems/player';
 import { createKeyState, createCursor, setupKeyboardListeners, setupMouseListeners } from '@/lib/game/systems/input';
+import { createCamera, updateCamera, resetCamera } from '@/lib/game/systems/camera';
 import { spawnBullets, updateBullets } from '@/lib/game/systems/bullets';
 import { spawnRunaansShots, shouldFireRunaansShots } from '@/lib/game/systems/runaansHurricane';
 import { spawnEnemy, updateEnemies } from '@/lib/game/systems/enemies';
@@ -170,6 +171,7 @@ export default function GameCanvas({ onBackToMenu, selectedChampion }: GameCanva
     const xpOrbs: XPOrb[] = [];
     const waveState = createWaveState();
     const screenShake = createScreenShake();
+    const camera = createCamera();
     const cursor = createCursor();
     const keys = createKeyState();
     const damageNumbers = createDamageNumberPool();
@@ -205,7 +207,7 @@ export default function GameCanvas({ onBackToMenu, selectedChampion }: GameCanva
 
     // === INPUT SETUP ===
     const cleanupKeyboard = setupKeyboardListeners(keys);
-    const cleanupMouse = setupMouseListeners(canvas, cursor);
+    const cleanupMouse = setupMouseListeners(canvas, cursor, () => camera);
 
     // === PAUSE/RESUME ===
     const pauseGame = () => {
@@ -324,6 +326,7 @@ export default function GameCanvas({ onBackToMenu, selectedChampion }: GameCanva
       updateWaveBanner(waveState, now);
       updatePlayerIframes(player, now);
       updatePlayerMovement(player, keys, deltaTime);
+      updateCamera(camera, player);
 
       const fireRate = 1000 / player.championAttackSpeed; // Convert attacks per second to milliseconds between shots
       if (now - lastFireTime >= fireRate) {
@@ -425,7 +428,7 @@ export default function GameCanvas({ onBackToMenu, selectedChampion }: GameCanva
 
       // Render game objects (pixelated)
       ctx.imageSmoothingEnabled = false;
-      renderGameObjects(ctx, player, enemies, bullets, xpOrbs, enemyProjectiles, waveState, screenShake, cursor);
+      renderGameObjects(ctx, player, enemies, bullets, xpOrbs, enemyProjectiles, waveState, screenShake, cursor, camera);
 
       // Render state-specific overlays
       ctx.imageSmoothingEnabled = false;
@@ -441,8 +444,8 @@ export default function GameCanvas({ onBackToMenu, selectedChampion }: GameCanva
       // Render damage numbers and money indicators (crisp)
       ctx.imageSmoothingEnabled = true;
       if (!settings.reduceMotion) {
-        drawDamageNumbers(ctx, damageNumbers, now);
-        drawMoneyIndicators(ctx, moneyIndicators, now);
+        drawDamageNumbers(ctx, damageNumbers, now, camera);
+        drawMoneyIndicators(ctx, moneyIndicators, now, camera);
       }
 
       // Update HUD state for React
@@ -493,6 +496,7 @@ export default function GameCanvas({ onBackToMenu, selectedChampion }: GameCanva
       waveCompleteEndTime = 0;
       
       resetPlayer(player, selectedChampion);
+      resetCamera(camera);
       bullets.length = 0;
       enemies.length = 0;
       enemyProjectiles.length = 0;

@@ -4,7 +4,7 @@
  * Handles enemy spawning, movement, and behavior.
  */
 
-import { BASE_STATS, CANVAS_WIDTH, CANVAS_HEIGHT, ENEMY_SCALING_CONFIG, GAMEPLAY_SCALE } from '../config';
+import { BASE_STATS, WORLD_WIDTH, WORLD_HEIGHT, ENEMY_SCALING_CONFIG, GAMEPLAY_SCALE } from '../config';
 import { Enemy, Player, WaveState, EnemyType } from '../types';
 
 /**
@@ -44,20 +44,20 @@ export function spawnEnemy(enemies: Enemy[], waveState: WaveState, type: EnemyTy
 
   switch (edge) {
     case 0: // Top
-      x = Math.random() * CANVAS_WIDTH; 
+      x = Math.random() * WORLD_WIDTH; 
       y = -scaledStats.size - offscreenDistance;
       break;
     case 1: // Right
-      x = CANVAS_WIDTH + scaledStats.size + offscreenDistance; 
-      y = Math.random() * CANVAS_HEIGHT;
+      x = WORLD_WIDTH + scaledStats.size + offscreenDistance; 
+      y = Math.random() * WORLD_HEIGHT;
       break;
     case 2: // Bottom
-      x = Math.random() * CANVAS_WIDTH; 
-      y = CANVAS_HEIGHT + scaledStats.size + offscreenDistance;
+      x = Math.random() * WORLD_WIDTH; 
+      y = WORLD_HEIGHT + scaledStats.size + offscreenDistance;
       break;
     case 3: // Left
       x = -scaledStats.size - offscreenDistance; 
-      y = Math.random() * CANVAS_HEIGHT;
+      y = Math.random() * WORLD_HEIGHT;
       break;
   }
   
@@ -153,8 +153,8 @@ function enforceEnemyBoundaries(enemies: Enemy[]): void {
     }
     
     // Check right boundary
-    if (enemy.x + enemySize > CANVAS_WIDTH - margin) {
-      enemy.x = CANVAS_WIDTH - margin - enemySize;
+    if (enemy.x + enemySize > WORLD_WIDTH - margin) {
+      enemy.x = WORLD_WIDTH - margin - enemySize;
     }
     
     // Check top boundary
@@ -163,8 +163,8 @@ function enforceEnemyBoundaries(enemies: Enemy[]): void {
     }
     
     // Check bottom boundary
-    if (enemy.y + enemySize > CANVAS_HEIGHT - margin) {
-      enemy.y = CANVAS_HEIGHT - margin - enemySize;
+    if (enemy.y + enemySize > WORLD_HEIGHT - margin) {
+      enemy.y = WORLD_HEIGHT - margin - enemySize;
     }
   }
 }

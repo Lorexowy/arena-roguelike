@@ -38,7 +38,7 @@ export const CHAMPIONS: Record<ChampionId, Champion> = {
       critChance: 0.05,
       moveSpeed: 1.0,
       maxHealth: 100,
-      bulletRange: 75, // Limited range for more challenge
+      bulletRange: 75, 
     },
     iconSrc: '/icons/champions/byczan.webp',
     iconAlt: 'Byczan',

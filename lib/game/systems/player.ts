@@ -4,7 +4,7 @@
  * Handles player state initialization, movement, and stats calculations.
  */
 
-import { BASE_STATS, LEVEL_CONFIG, CANVAS_WIDTH, CANVAS_HEIGHT, SHOP_ITEM_CONFIG, GAMEPLAY_SCALE } from '../config';
+import { BASE_STATS, LEVEL_CONFIG, WORLD_WIDTH, WORLD_HEIGHT, SHOP_ITEM_CONFIG, GAMEPLAY_SCALE } from '../config';
 import { Player, DamageNumber } from '../types';
 import { spawnDamageNumber } from './damageNumbers';
 import { playLevelUpSound, playPlayerDamageSound } from '../audio/sounds';
@@ -17,8 +17,8 @@ export function createPlayer(championId: ChampionId = 'sascha'): Player {
   const champion = getChampion(championId);
   
   return {
-    x: CANVAS_WIDTH / 2,
-    y: CANVAS_HEIGHT / 2,
+    x: WORLD_WIDTH / 2,
+    y: WORLD_HEIGHT / 2,
     radius: BASE_STATS.player.radius,
     baseSpeed: champion.stats.moveSpeed, // Use absolute value, not multiplier
     speedMultiplier: 1.0, // Reset to 1.0 since we're using absolute values
@@ -78,9 +78,9 @@ export function updatePlayerMovement(
   if (keys['a']) player.x -= distance;
   if (keys['d']) player.x += distance;
 
-  // Keep within bounds
-  player.x = Math.max(player.radius, Math.min(CANVAS_WIDTH - player.radius, player.x));
-  player.y = Math.max(player.radius, Math.min(CANVAS_HEIGHT - player.radius, player.y));
+  // Keep within world bounds (not viewport bounds)
+  player.x = Math.max(player.radius, Math.min(WORLD_WIDTH - player.radius, player.x));
+  player.y = Math.max(player.radius, Math.min(WORLD_HEIGHT - player.radius, player.y));
 }
 
 /**
@@ -148,8 +148,8 @@ export function addXP(player: Player, amount: number): boolean {
 export function resetPlayer(player: Player, championId: ChampionId = 'sascha'): void {
   const champion = getChampion(championId);
   
-  player.x = CANVAS_WIDTH / 2;
-  player.y = CANVAS_HEIGHT / 2;
+  player.x = WORLD_WIDTH / 2;
+  player.y = WORLD_HEIGHT / 2;
   player.health = champion.stats.maxHealth;
   player.maxHealth = champion.stats.maxHealth;
   player.iframes = false;

@@ -9,9 +9,16 @@
 const ORIGINAL_WIDTH = 320;
 const ORIGINAL_HEIGHT = 180;
 
-// Dynamic canvas dimensions (full viewport - actual playable area)
+// Dynamic canvas dimensions (full viewport - what player sees)
 export let CANVAS_WIDTH = typeof window !== 'undefined' ? window.innerWidth : 1920;
 export let CANVAS_HEIGHT = typeof window !== 'undefined' ? window.innerHeight : 1080;
+
+// World size multiplier - makes the playable world larger than viewport
+export const WORLD_SIZE_MULTIPLIER = 3; // World is 3x larger than viewport
+
+// World dimensions (actual playable area)
+export let WORLD_WIDTH = CANVAS_WIDTH * WORLD_SIZE_MULTIPLIER;
+export let WORLD_HEIGHT = CANVAS_HEIGHT * WORLD_SIZE_MULTIPLIER;
 
 // Scaling factor for visual elements (so they don't appear tiny)
 // Calculate based on average viewport size to maintain visual consistency
@@ -29,6 +36,8 @@ export const GRID_SIZE = 16;       // Grid spacing in pixels
 export function updateCanvasDimensions(width: number, height: number): void {
   CANVAS_WIDTH = width;
   CANVAS_HEIGHT = height;
+  WORLD_WIDTH = width * WORLD_SIZE_MULTIPLIER;
+  WORLD_HEIGHT = height * WORLD_SIZE_MULTIPLIER;
   
   // Update visual scale based on viewport size
   const scaleX = width / ORIGINAL_WIDTH;

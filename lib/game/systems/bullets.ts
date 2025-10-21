@@ -4,7 +4,7 @@
  * Handles bullet spawning, movement, and lifecycle.
  */
 
-import { BASE_STATS, CANVAS_WIDTH, CANVAS_HEIGHT } from '../config';
+import { BASE_STATS, WORLD_WIDTH, WORLD_HEIGHT } from '../config';
 import { Bullet, Player, Cursor } from '../types';
 import { playPlayerShootSound } from '../audio/sounds';
 
@@ -78,9 +78,9 @@ export function updateBullets(bullets: Bullet[], deltaTime: number): void {
       continue;
     }
 
-    // Remove off-screen bullets
-    if (bullet.x < -10 || bullet.x > CANVAS_WIDTH + 10 || 
-        bullet.y < -10 || bullet.y > CANVAS_HEIGHT + 10) {
+    // Remove off-screen bullets (using world bounds)
+    if (bullet.x < -10 || bullet.x > WORLD_WIDTH + 10 || 
+        bullet.y < -10 || bullet.y > WORLD_HEIGHT + 10) {
       bullets.splice(i, 1);
     }
   }

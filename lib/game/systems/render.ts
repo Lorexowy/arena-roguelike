@@ -5,32 +5,32 @@
  * Game objects rendered with pixelated style on main canvas.
  */
 
-import { CANVAS_WIDTH, CANVAS_HEIGHT, GRID_SIZE, BASE_STATS, VISUAL_SCALE } from '../config';
-import { Player, Enemy, Bullet, XPOrb, WaveState, ScreenShake, Cursor, EnemyProjectile } from '../types';
+import { CANVAS_WIDTH, CANVAS_HEIGHT, GRID_SIZE, BASE_STATS, VISUAL_SCALE, WORLD_WIDTH, WORLD_HEIGHT } from '../config';
+import { Player, Enemy, Bullet, XPOrb, WaveState, ScreenShake, Cursor, EnemyProjectile, Camera } from '../types';
 
 /**
- * Draw background and grid
+ * Draw background and grid (in world space)
  */
 function drawBackground(ctx: CanvasRenderingContext2D): void {
   ctx.fillStyle = '#0B1020';
-  ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+  ctx.fillRect(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
 
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
   ctx.lineWidth = 1 * VISUAL_SCALE;
   
   const gridSize = GRID_SIZE * VISUAL_SCALE;
 
-  for (let x = 0; x <= CANVAS_WIDTH; x += gridSize) {
+  for (let x = 0; x <= WORLD_WIDTH; x += gridSize) {
     ctx.beginPath();
     ctx.moveTo(x, 0);
-    ctx.lineTo(x, CANVAS_HEIGHT);
+    ctx.lineTo(x, WORLD_HEIGHT);
     ctx.stroke();
   }
 
-  for (let y = 0; y <= CANVAS_HEIGHT; y += gridSize) {
+  for (let y = 0; y <= WORLD_HEIGHT; y += gridSize) {
     ctx.beginPath();
     ctx.moveTo(0, y);
-    ctx.lineTo(CANVAS_WIDTH, y);
+    ctx.lineTo(WORLD_WIDTH, y);
     ctx.stroke();
   }
 }
@@ -240,11 +240,17 @@ export function renderGameObjects(
   enemyProjectiles: EnemyProjectile[],
   waveState: WaveState,
   screenShake: ScreenShake,
-  cursor: Cursor
+  cursor: Cursor,
+  camera: Camera
 ): void {
   const now = Date.now();
 
   ctx.save();
+  
+  // Apply camera offset (convert world space to screen space)
+  const viewportHalfW = camera.viewportWidth / 2;
+  const viewportHalfH = camera.viewportHeight / 2;
+  ctx.translate(-camera.x + viewportHalfW, -camera.y + viewportHalfH);
   ctx.translate(screenShake.offsetX, screenShake.offsetY);
 
   drawBackground(ctx);
@@ -257,7 +263,7 @@ export function renderGameObjects(
 
   ctx.restore();
 
-  // Wave banner (rendered without shake)
+  // Wave banner (rendered without camera transform)
   drawWaveBanner(ctx, waveState);
 }
 
