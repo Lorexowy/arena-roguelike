@@ -4,7 +4,7 @@
  * Handles enemy spawning, movement, and behavior.
  */
 
-import { BASE_STATS, CANVAS_WIDTH, CANVAS_HEIGHT, ENEMY_SCALING_CONFIG } from '../config';
+import { BASE_STATS, CANVAS_WIDTH, CANVAS_HEIGHT, ENEMY_SCALING_CONFIG, GAMEPLAY_SCALE } from '../config';
 import { Enemy, Player, WaveState, EnemyType } from '../types';
 
 /**
@@ -98,8 +98,8 @@ export function spawnEnemy(enemies: Enemy[], waveState: WaveState, type: EnemyTy
  */
 function applyEnemySeparation(enemies: Enemy[], deltaTime: number): void {
   const timeMultiplier = deltaTime / 16.67; // Normalize to 60 FPS baseline
-  const separationForce = 0.5; // How strong the separation force is
-  const minDistance = 12; // Minimum distance between enemy centers (size + buffer)
+  const separationForce = 0.5 * GAMEPLAY_SCALE; // Scale the force with gameplay
+  const minDistance = 12 * GAMEPLAY_SCALE; // Scale minimum distance with gameplay
   
   for (let i = 0; i < enemies.length; i++) {
     const enemy1 = enemies[i];
@@ -142,10 +142,10 @@ function applyEnemySeparation(enemies: Enemy[], deltaTime: number): void {
  * Keep enemies within the game boundaries
  */
 function enforceEnemyBoundaries(enemies: Enemy[]): void {
-  const margin = 5; // Small margin from the edge
+  const margin = 5 * GAMEPLAY_SCALE; // Scale margin with gameplay
   
   for (const enemy of enemies) {
-    const enemySize = enemy.size || 5; // Default size if not defined
+    const enemySize = enemy.size || (5 * GAMEPLAY_SCALE); // Default size if not defined
     
     // Check left boundary
     if (enemy.x - enemySize < margin) {

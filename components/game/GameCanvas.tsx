@@ -3,15 +3,16 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 
 // Configuration and types
-import { BASE_STATS, CANVAS_WIDTH, CANVAS_HEIGHT } from '@/lib/game/config';
+import { BASE_STATS, CANVAS_WIDTH, CANVAS_HEIGHT, updateCanvasDimensions, GAMEPLAY_SCALE } from '@/lib/game/config';
 import { GameState, Bullet, Enemy, XPOrb, EnemyProjectile } from '@/lib/game/types';
 import { ChampionId } from '@/lib/game/champions/catalog';
 import { GameSettings, loadSettings, saveSettings } from '@/lib/game/settings';
 
 // Game systems
-import { createPlayer, updatePlayerMovement, updatePlayerIframes, addXP, resetPlayer, getPlayerSpeed, updatePlayerRegeneration } from '@/lib/game/systems/player';
+import { createPlayer, updatePlayerMovement, updatePlayerIframes, addXP, resetPlayer, getPlayerSpeed, getPlayerSpeedDisplay, updatePlayerRegeneration } from '@/lib/game/systems/player';
 import { createKeyState, createCursor, setupKeyboardListeners, setupMouseListeners } from '@/lib/game/systems/input';
 import { spawnBullets, updateBullets } from '@/lib/game/systems/bullets';
+import { spawnRunaansShots, shouldFireRunaansShots } from '@/lib/game/systems/runaansHurricane';
 import { spawnEnemy, updateEnemies } from '@/lib/game/systems/enemies';
 import { updateXPOrbs } from '@/lib/game/systems/xp';
 import { createWaveState, updateWaveBanner, checkWaveCleared, resetWaveState, startWaveBreak, updateBreakCountdown, startNextWave, prepareNextWave, pauseBreak, resumeBreak } from '@/lib/game/systems/waves';
@@ -40,7 +41,7 @@ import { createShopState, shouldShopAppear, updateShopAppearance, openShop, clos
  * GameCanvas Component
  * 
  * Main game with:
- * - Pixelated game canvas (320×180)
+ * - Pixelated game canvas (full viewport)
  * - DOM-based crisp HUD overlay
  * - Full Stats and Settings modals
  * - Pause/resume system
@@ -85,6 +86,7 @@ export default function GameCanvas({ onBackToMenu, selectedChampion }: GameCanva
     critChance: 0,
     money: 0,
     lifesteal: 0,
+    killCount: 0,
     upgradeCount: {
       multishot: 0,
       attackSpeed: 0,
@@ -124,6 +126,17 @@ export default function GameCanvas({ onBackToMenu, selectedChampion }: GameCanva
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    // Set canvas size to match viewport
+    const updateCanvasSize = () => {
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      canvas.width = width;
+      canvas.height = height;
+      updateCanvasDimensions(width, height);
+    };
+    updateCanvasSize();
+    window.addEventListener('resize', updateCanvasSize);
+
     containerRef.current?.focus();
 
     // Initialize audio system (only once)
@@ -143,6 +156,7 @@ export default function GameCanvas({ onBackToMenu, selectedChampion }: GameCanva
     let pausedTime = 0;
     let pauseStartTime = 0;
     let lastFireTime = 0;
+    let lastRunaansFireTime = 0;
     let getReadyEndTime = 0;
     let waveCompleteEndTime = 0;
     let lastFrameTime = Date.now(); // For delta time calculation
@@ -317,6 +331,12 @@ export default function GameCanvas({ onBackToMenu, selectedChampion }: GameCanva
         lastFireTime = now;
       }
 
+      // Handle Runaan's Hurricane auto-targeting shots
+      if (shouldFireRunaansShots(player, lastRunaansFireTime, now)) {
+        spawnRunaansShots(bullets, player, enemies, now);
+        lastRunaansFireTime = now;
+      }
+
       updateBullets(bullets, deltaTime);
 
       // Spawn chasers
@@ -435,14 +455,15 @@ export default function GameCanvas({ onBackToMenu, selectedChampion }: GameCanva
           xpToNextLevel: player.xpToNextLevel,
           survivalTime: Math.floor(elapsed / 1000),
           fireRate: player.championAttackSpeed,
-          moveSpeed: getPlayerSpeed(player),
+          moveSpeed: getPlayerSpeedDisplay(player),  // Use display version for HUD
           damage: player.championDamage,
           multishot: player.multishot,
           currentWave: waveState.currentWave,
-          magnetRadius: BASE_STATS.xp.magnetRadius * player.magnetMultiplier,
+          magnetRadius: (BASE_STATS.xp.magnetRadius * player.magnetMultiplier) / GAMEPLAY_SCALE,  // Unscale for display
           critChance: player.critChance,
           money: player.money,
           lifesteal: player.lifesteal,
+          killCount: player.killCount,
           upgradeCount: {
             multishot: upgradeCount.multishot,
             attackSpeed: upgradeCount.attackSpeed,
@@ -467,6 +488,7 @@ export default function GameCanvas({ onBackToMenu, selectedChampion }: GameCanva
       startTime = Date.now();
       pausedTime = 0;
       lastFireTime = 0;
+      lastRunaansFireTime = 0;
       getReadyEndTime = 0;
       waveCompleteEndTime = 0;
       
@@ -559,6 +581,7 @@ export default function GameCanvas({ onBackToMenu, selectedChampion }: GameCanva
 
     // === CLEANUP ===
     return () => {
+      window.removeEventListener('resize', updateCanvasSize);
       cleanupKeyboard();
       cleanupMouse();
       cancelAnimationFrame(animationFrameId);
@@ -780,8 +803,6 @@ export default function GameCanvas({ onBackToMenu, selectedChampion }: GameCanva
       {/* Game canvas (pixelated) */}
       <canvas
         ref={canvasRef}
-        width={CANVAS_WIDTH}
-        height={CANVAS_HEIGHT}
         className="game-canvas"
       />
 
@@ -923,23 +944,25 @@ export default function GameCanvas({ onBackToMenu, selectedChampion }: GameCanva
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          min-height: 100vh;
+          width: 100vw;
+          height: 100vh;
           background-color: #000000;
-          padding: 20px;
+          padding: 0;
+          margin: 0;
           outline: none;
-          position: relative;
+          position: fixed;
+          top: 0;
+          left: 0;
+          overflow: hidden;
         }
 
         .game-canvas {
-          width: 100%;
-          max-width: 1280px;
-          height: auto;
-          aspect-ratio: 16 / 9;
+          width: 100vw;
+          height: 100vh;
           image-rendering: pixelated;
           image-rendering: -moz-crisp-edges;
           image-rendering: crisp-edges;
-          border: 2px solid #1a2332;
-          box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+          display: block;
         }
 
         .overlay {

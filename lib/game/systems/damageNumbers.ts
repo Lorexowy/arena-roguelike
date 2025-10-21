@@ -4,7 +4,7 @@
  * Pooled floating damage numbers that appear on enemy hits.
  */
 
-import { DAMAGE_NUMBER_CONFIG } from '../config';
+import { DAMAGE_NUMBER_CONFIG, VISUAL_SCALE } from '../config';
 import { DamageNumber } from '../types';
 
 /**
@@ -98,7 +98,7 @@ export function drawDamageNumbers(
     }
 
     // Determine size and color based on type
-    let fontSize = DAMAGE_NUMBER_CONFIG.fontSize;
+    let fontSize = DAMAGE_NUMBER_CONFIG.fontSize * VISUAL_SCALE;
     let color: string;
     let text: string;
 
@@ -108,7 +108,7 @@ export function drawDamageNumbers(
       text = `-${dn.damage}`;
     } else if (dn.isCrit) {
       // Crit damage: larger, yellow
-      fontSize = DAMAGE_NUMBER_CONFIG.fontSize + 4;
+      fontSize = (DAMAGE_NUMBER_CONFIG.fontSize + 4) * VISUAL_SCALE;
       color = `rgba(250, 204, 21, ${opacity})`; // #FACC15 yellow
       text = dn.damage.toString();
     } else {
@@ -120,7 +120,7 @@ export function drawDamageNumbers(
     ctx.font = `bold ${fontSize}px sans-serif`;
     ctx.fillStyle = color;
     ctx.strokeStyle = `rgba(0, 0, 0, ${opacity * 0.5})`;
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 3 * VISUAL_SCALE;
     
     ctx.strokeText(text, dn.x, dn.y);
     ctx.fillText(text, dn.x, dn.y);

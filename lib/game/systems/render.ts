@@ -5,7 +5,7 @@
  * Game objects rendered with pixelated style on main canvas.
  */
 
-import { CANVAS_WIDTH, CANVAS_HEIGHT, GRID_SIZE, BASE_STATS } from '../config';
+import { CANVAS_WIDTH, CANVAS_HEIGHT, GRID_SIZE, BASE_STATS, VISUAL_SCALE } from '../config';
 import { Player, Enemy, Bullet, XPOrb, WaveState, ScreenShake, Cursor, EnemyProjectile } from '../types';
 
 /**
@@ -16,16 +16,18 @@ function drawBackground(ctx: CanvasRenderingContext2D): void {
   ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
-  ctx.lineWidth = 1;
+  ctx.lineWidth = 1 * VISUAL_SCALE;
+  
+  const gridSize = GRID_SIZE * VISUAL_SCALE;
 
-  for (let x = 0; x <= CANVAS_WIDTH; x += GRID_SIZE) {
+  for (let x = 0; x <= CANVAS_WIDTH; x += gridSize) {
     ctx.beginPath();
     ctx.moveTo(x, 0);
     ctx.lineTo(x, CANVAS_HEIGHT);
     ctx.stroke();
   }
 
-  for (let y = 0; y <= CANVAS_HEIGHT; y += GRID_SIZE) {
+  for (let y = 0; y <= CANVAS_HEIGHT; y += gridSize) {
     ctx.beginPath();
     ctx.moveTo(0, y);
     ctx.lineTo(CANVAS_WIDTH, y);
@@ -158,18 +160,18 @@ function drawWaveBanner(ctx: CanvasRenderingContext2D, waveState: WaveState): vo
 
   // No background - just text
   ctx.fillStyle = '#FFFFFF';
-  ctx.font = 'bold 16px monospace';
+  ctx.font = `bold ${16 * VISUAL_SCALE}px monospace`;
   ctx.textAlign = 'center';
   ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 2 * VISUAL_SCALE;
   ctx.strokeText(`WAVE ${waveState.currentWave}`, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
   ctx.fillText(`WAVE ${waveState.currentWave}`, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
   
   if (waveState.currentModifier) {
     ctx.fillStyle = '#FF8844';
-    ctx.font = 'bold 10px monospace';
-    ctx.strokeText(waveState.currentModifier.name, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 12);
-    ctx.fillText(waveState.currentModifier.name, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 12);
+    ctx.font = `bold ${10 * VISUAL_SCALE}px monospace`;
+    ctx.strokeText(waveState.currentModifier.name, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 12 * VISUAL_SCALE);
+    ctx.fillText(waveState.currentModifier.name, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 12 * VISUAL_SCALE);
   }
   
   ctx.textAlign = 'left';
@@ -181,10 +183,10 @@ function drawWaveBanner(ctx: CanvasRenderingContext2D, waveState: WaveState): vo
 export function drawWaveCompleteBanner(ctx: CanvasRenderingContext2D): void {
   // No background - just text with outline
   ctx.fillStyle = '#44FF44';
-  ctx.font = 'bold 16px monospace';
+  ctx.font = `bold ${16 * VISUAL_SCALE}px monospace`;
   ctx.textAlign = 'center';
   ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 2 * VISUAL_SCALE;
   ctx.strokeText('✓ Fala pokonana!', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
   ctx.fillText('✓ Fala pokonana!', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
   ctx.textAlign = 'left';
@@ -196,17 +198,17 @@ export function drawWaveCompleteBanner(ctx: CanvasRenderingContext2D): void {
 export function drawCountdown(ctx: CanvasRenderingContext2D, remaining: number): void {
   // No background - just text with outline
   ctx.fillStyle = '#FFFFFF';
-  ctx.font = 'bold 14px monospace';
+  ctx.font = `bold ${14 * VISUAL_SCALE}px monospace`;
   ctx.textAlign = 'center';
   ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
-  ctx.lineWidth = 2;
-  ctx.strokeText('Następna fala za', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 8);
-  ctx.fillText('Następna fala za', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 8);
+  ctx.lineWidth = 2 * VISUAL_SCALE;
+  ctx.strokeText('Następna fala za', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 8 * VISUAL_SCALE);
+  ctx.fillText('Następna fala za', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 8 * VISUAL_SCALE);
   
   ctx.fillStyle = '#FFD700';
-  ctx.font = 'bold 24px monospace';
-  ctx.strokeText(`${remaining}`, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 16);
-  ctx.fillText(`${remaining}`, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 16);
+  ctx.font = `bold ${24 * VISUAL_SCALE}px monospace`;
+  ctx.strokeText(`${remaining}`, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 16 * VISUAL_SCALE);
+  ctx.fillText(`${remaining}`, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 16 * VISUAL_SCALE);
   ctx.textAlign = 'left';
 }
 
@@ -216,12 +218,12 @@ export function drawCountdown(ctx: CanvasRenderingContext2D, remaining: number):
 export function drawGetReady(ctx: CanvasRenderingContext2D): void {
   // No background - just text with outline
   ctx.fillStyle = '#FFD700';
-  ctx.font = 'bold 20px monospace';
+  ctx.font = `bold ${20 * VISUAL_SCALE}px monospace`;
   ctx.textAlign = 'center';
   ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
-  ctx.lineWidth = 2;
-  ctx.strokeText('Przygotuj się...', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 4);
-  ctx.fillText('Przygotuj się...', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 4);
+  ctx.lineWidth = 2 * VISUAL_SCALE;
+  ctx.strokeText('Przygotuj się...', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 4 * VISUAL_SCALE);
+  ctx.fillText('Przygotuj się...', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 4 * VISUAL_SCALE);
   ctx.textAlign = 'left';
 }
 
@@ -255,7 +257,7 @@ export function renderGameObjects(
 
   ctx.restore();
 
-  // Wave banner (rendered on game canvas)
+  // Wave banner (rendered without shake)
   drawWaveBanner(ctx, waveState);
 }
 

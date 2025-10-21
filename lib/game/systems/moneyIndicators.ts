@@ -4,6 +4,8 @@
  * Pooled floating money indicators that appear when money drops.
  */
 
+import { VISUAL_SCALE } from '../config';
+
 export interface MoneyIndicator {
   x: number;
   y: number;
@@ -16,7 +18,7 @@ const MONEY_INDICATOR_CONFIG = {
   poolSize: 30,
   lifetime: 600,      // 600ms total lifetime
   fadeStart: 300,     // Start fading at 300ms
-  riseSpeed: 0.5,     // Pixels per ms
+  riseSpeed: 0.5 * VISUAL_SCALE,     // Scaled - visual effect
   fontSize: 14,
 };
 
@@ -105,12 +107,12 @@ export function drawMoneyIndicators(
 
     // Bright green color (#22C55E)
     const color = `rgba(34, 197, 94, ${opacity})`;
-    const fontSize = MONEY_INDICATOR_CONFIG.fontSize;
+    const fontSize = MONEY_INDICATOR_CONFIG.fontSize * VISUAL_SCALE;
 
     ctx.font = `bold ${fontSize}px sans-serif`;
     ctx.fillStyle = color;
     ctx.strokeStyle = `rgba(0, 0, 0, ${opacity * 0.5})`;
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 3 * VISUAL_SCALE;
     
     const text = `+$${mi.amount}`;
     ctx.strokeText(text, mi.x, mi.y);

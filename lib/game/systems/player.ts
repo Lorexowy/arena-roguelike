@@ -4,7 +4,7 @@
  * Handles player state initialization, movement, and stats calculations.
  */
 
-import { BASE_STATS, LEVEL_CONFIG, CANVAS_WIDTH, CANVAS_HEIGHT, SHOP_ITEM_CONFIG } from '../config';
+import { BASE_STATS, LEVEL_CONFIG, CANVAS_WIDTH, CANVAS_HEIGHT, SHOP_ITEM_CONFIG, GAMEPLAY_SCALE } from '../config';
 import { Player, DamageNumber } from '../types';
 import { spawnDamageNumber } from './damageNumbers';
 import { playLevelUpSound, playPlayerDamageSound } from '../audio/sounds';
@@ -43,6 +43,8 @@ export function createPlayer(championId: ChampionId = 'sascha'): Player {
     // Store champion stats for calculations
     championDamage: champion.stats.damage,
     championAttackSpeed: champion.stats.attackSpeed,
+    runaansShots: 0,
+    killCount: 0,
   };
 }
 
@@ -51,6 +53,13 @@ export function createPlayer(championId: ChampionId = 'sascha'): Player {
  */
 export function getPlayerSpeed(player: Player): number {
   return player.baseSpeed * player.speedMultiplier;
+}
+
+/**
+ * Get player speed for display (unscaled base stat)
+ */
+export function getPlayerSpeedDisplay(player: Player): number {
+  return (player.baseSpeed * player.speedMultiplier) / GAMEPLAY_SCALE;
 }
 
 /**
@@ -162,6 +171,8 @@ export function resetPlayer(player: Player, championId: ChampionId = 'sascha'): 
   player.bulletRange = champion.stats.bulletRange;
   player.championDamage = champion.stats.damage;
   player.championAttackSpeed = champion.stats.attackSpeed;
+  player.runaansShots = 0;
+  player.killCount = 0;
 }
 
 /**

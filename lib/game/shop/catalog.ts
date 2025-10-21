@@ -106,7 +106,7 @@ export const SHOP_CATALOG: ShopEntry[] = [
     type: 'item',
     name: 'Vampiric Scepter',
     description: '+10% lifesteal (max 50%)',
-    rarity: 'rare',
+    rarity: 'uncommon',
     baseCost: 12, // Reduced from 40 to 12
     iconSrc: '/icons/shop/vampiric_scepter.webp',
     iconAlt: 'Vampiric Scepter',
@@ -116,6 +116,20 @@ export const SHOP_CATALOG: ShopEntry[] = [
         player.lifesteal + 0.10,
         SHOP_ITEM_CONFIG.lifestealCap
       );
+    },
+  },
+  {
+    id: 'runaans_hurricane',
+    type: 'item',
+    name: 'Runaan\'s Hurricane',
+    description: 'Auto-targeting shot at nearby enemy',
+    rarity: 'uncommon',
+    baseCost: 14,
+    iconSrc: '/icons/shop/runaans_hurricane.webp',
+    iconAlt: 'Runaan\'s Hurricane',
+    isAvailable: (player) => (player.runaansShots || 0) < 6, // Max 6 stacks
+    apply: (player) => {
+      player.runaansShots = (player.runaansShots || 0) + 1; // Add one auto-targeting shot
     },
   },
 ];

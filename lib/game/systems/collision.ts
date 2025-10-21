@@ -94,6 +94,9 @@ export function handleBulletEnemyCollisions(
         spawnDamageNumber(damageNumbers, enemy.x, enemy.y - enemyDmgSize, finalDamage, isCrit, now);
         
         if (enemyDied) {
+          // Increment kill counter
+          player.killCount++;
+          
           // Drop XP based on enemy type
           const xpValue = enemy.type === 'shooter' 
             ? BASE_STATS.enemy.shooter.xpValue 

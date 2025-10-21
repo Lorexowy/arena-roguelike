@@ -88,6 +88,8 @@ export interface Player {
   bulletRange?: number;        // Optional: for champions with limited range
   championDamage: number;      // Champion's base damage value
   championAttackSpeed: number; // Champion's base attack speed value
+  runaansShots: number;        // Number of auto-targeting shots from Runaan's Hurricane
+  killCount: number;           // Total enemies killed in this run
 }
 
 export interface WaveState {

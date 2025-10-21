@@ -30,6 +30,7 @@ interface GameHUDProps {
   money: number;
   lifesteal?: number;
   currentWave?: number;
+  killCount?: number;
   onOpenStats: () => void;
 }
 
@@ -49,6 +50,7 @@ export default function GameHUD({
   money,
   lifesteal = 0,
   currentWave = 1,
+  killCount = 0,
   onOpenStats,
 }: GameHUDProps) {
   const minutes = Math.floor(survivalTime / 60);
@@ -105,13 +107,14 @@ export default function GameHUD({
         )}
       </div>
 
-      {/* Top-Right: Time, Level & Money */}
+      {/* Top-Right: Time, Level, Money & Kills */}
       <div className="hud-top-right">
         <div className="time">
           {minutes.toString().padStart(2, '0')}:{seconds.toString().padStart(2, '0')}
         </div>
         <div className="level">Level {level}</div>
         <div className="money">${money}</div>
+        <div className="kills">kills: {killCount}</div>
       </div>
 
       {/* Right Side: Stat Pills */}
@@ -276,6 +279,13 @@ export default function GameHUD({
         .money {
           font-size: 11px;
           color: #4ADE80;
+          margin-top: 2px;
+          font-weight: 600;
+        }
+
+        .kills {
+          font-size: 11px;
+          color: #FF6B9D;
           margin-top: 2px;
           font-weight: 600;
         }
