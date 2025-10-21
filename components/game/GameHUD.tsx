@@ -100,11 +100,6 @@ export default function GameHUD({
           <div className="hp-separator">/</div>
           <div className="hp-max">{displayMaxHealth}</div>
         </div>
-        {lifesteal > 0 && (
-          <div className="lifesteal-text-vertical">
-            LS: {Math.round(lifesteal * 100)}%
-          </div>
-        )}
       </div>
 
       {/* Top-Right: Time, Level, Money & Kills */}
@@ -137,12 +132,14 @@ export default function GameHUD({
             <span className="stat-value">{multishot}</span>
           </div>
         )}
-        {critChance > 0 && (
-          <div className="stat-pill" title={`Critical Hit Chance: ${(critChance * 100).toFixed(0)}%`}>
-            <span className="stat-label">CRIT</span>
-            <span className="stat-value">{(critChance * 100).toFixed(0)}%</span>
-          </div>
-        )}
+        <div className="stat-pill" title={`Critical Hit Chance: ${(critChance * 100).toFixed(0)}%`}>
+          <span className="stat-label">CRIT</span>
+          <span className="stat-value">{(critChance * 100).toFixed(0)}%</span>
+        </div>
+        <div className="stat-pill" title={`Lifesteal: ${(lifesteal * 100).toFixed(0)}%`}>
+          <span className="stat-label">LS</span>
+          <span className="stat-value">{(lifesteal * 100).toFixed(0)}%</span>
+        </div>
       </div>
 
 
@@ -177,31 +174,35 @@ export default function GameHUD({
         /* Left Side: Vertical HP Bar */
         .hud-hp-vertical {
           position: absolute;
-          left: 4px;
+          left: 8px;
           top: 50%;
           transform: translateY(-50%);
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 4px;
+          gap: 6px;
         }
 
         .hp-text-horizontal {
-          font-size: 12px;
-          font-weight: 700;
-          color: white;
-          text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
-          font-family: monospace;
+          font-size: 14px;
+          font-weight: 800;
+          color: #ffffff;
+          text-shadow: 0 0 8px rgba(255, 68, 68, 0.8), 0 2px 4px rgba(0, 0, 0, 0.9);
+          font-family: 'Arial Black', sans-serif;
+          letter-spacing: 1px;
         }
 
         .hp-bar-container-vertical {
-          width: 20px;
-          height: 120px;
-          background: rgba(0, 0, 0, 0.8);
-          border: 2px solid rgba(255, 255, 255, 0.4);
-          border-radius: 10px;
+          width: 28px;
+          height: 160px;
+          background: linear-gradient(180deg, rgba(20, 20, 30, 0.95) 0%, rgba(10, 10, 20, 0.95) 100%);
+          border: 3px solid rgba(255, 255, 255, 0.3);
+          border-radius: 14px;
           overflow: hidden;
-          box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+          box-shadow: 
+            inset 0 2px 8px rgba(0, 0, 0, 0.7),
+            0 4px 16px rgba(0, 0, 0, 0.6),
+            0 0 0 1px rgba(255, 255, 255, 0.1);
           position: relative;
         }
 
@@ -211,41 +212,50 @@ export default function GameHUD({
           left: 0;
           right: 0;
           transition: height 0.3s ease, background-color 0.3s ease;
-          border-radius: 8px;
-          box-shadow: 0 0 8px rgba(255, 68, 68, 0.6);
+          border-radius: 11px;
+          box-shadow: 
+            0 0 16px currentColor,
+            inset 0 2px 4px rgba(255, 255, 255, 0.3),
+            inset 0 -2px 4px rgba(0, 0, 0, 0.3);
+          background: linear-gradient(180deg, 
+            rgba(255, 255, 255, 0.15) 0%, 
+            transparent 50%, 
+            rgba(0, 0, 0, 0.2) 100%
+          );
         }
 
         .hp-values-vertical {
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 2px;
-          font-size: 10px;
-          font-weight: 600;
+          gap: 1px;
+          font-size: 12px;
+          font-weight: 700;
           color: white;
-          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
-          font-family: monospace;
+          text-shadow: 
+            0 0 4px rgba(255, 68, 68, 0.8),
+            0 2px 4px rgba(0, 0, 0, 0.9);
+          font-family: 'Arial', sans-serif;
+          background: rgba(0, 0, 0, 0.6);
+          padding: 4px 6px;
+          border-radius: 6px;
+          border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         .hp-current {
           color: #ff6b6b;
+          font-size: 13px;
+          font-weight: 800;
         }
 
         .hp-separator {
-          color: #888;
+          color: #666;
+          font-size: 10px;
         }
 
         .hp-max {
-          color: #888;
-        }
-
-        .lifesteal-text-vertical {
-          font-size: 9px;
-          color: #ff6b6b;
-          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
-          font-weight: 600;
-          writing-mode: vertical-rl;
-          text-orientation: mixed;
+          color: #999;
+          font-size: 11px;
         }
 
         /* Top-Right: Time & Level */
@@ -313,6 +323,7 @@ export default function GameHUD({
           cursor: help;
           transition: all 0.3s;
           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+          position: relative;
         }
 
         .stat-pill:hover {
@@ -320,6 +331,37 @@ export default function GameHUD({
           border-color: rgba(102, 126, 234, 0.9);
           transform: translateX(-6px) scale(1.05);
           box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        .stat-pill:hover::after {
+          content: attr(title);
+          position: absolute;
+          right: calc(100% + 8px);
+          top: 50%;
+          transform: translateY(-50%);
+          background: rgba(10, 16, 32, 0.98);
+          border: 2px solid rgba(102, 126, 234, 0.8);
+          border-radius: 6px;
+          padding: 6px 10px;
+          white-space: nowrap;
+          font-size: 12px;
+          color: #e0e0e0;
+          font-weight: 500;
+          pointer-events: none;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+          z-index: 1000;
+          animation: tooltipFadeIn 0.2s ease;
+        }
+
+        @keyframes tooltipFadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(-50%) translateX(5px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(-50%) translateX(0);
+          }
         }
 
         .stat-label {
@@ -338,16 +380,15 @@ export default function GameHUD({
         /* Bottom: XP Bar */
         .hud-xp-bar {
           position: absolute;
-          bottom: 2px;
-          left: 30px;
-          right: 4px;
-          height: 20px;
-          background: rgba(10, 16, 32, 0.9);
-          border: 2px solid rgba(102, 126, 234, 0.6);
-          border-radius: 4px;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          width: 100%;
+          height: 24px;
+          background: rgba(10, 16, 32, 0.95);
+          border-top: 2px solid rgba(102, 126, 234, 0.6);
           overflow: hidden;
-          position: relative;
-          box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+          box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.5);
         }
 
         .xp-fill {
