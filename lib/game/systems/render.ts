@@ -5,16 +5,44 @@
  * Game objects rendered with pixelated style on main canvas.
  */
 
-import { CANVAS_WIDTH, CANVAS_HEIGHT, GRID_SIZE, BASE_STATS, VISUAL_SCALE, WORLD_WIDTH, WORLD_HEIGHT } from '../config';
+import { CANVAS_WIDTH, CANVAS_HEIGHT, GRID_SIZE, BASE_STATS, VISUAL_SCALE, WORLD_WIDTH, WORLD_HEIGHT, TILE_SIZE } from '../config';
 import { Player, Enemy, Bullet, XPOrb, WaveState, ScreenShake, Cursor, EnemyProjectile, Camera } from '../types';
+import { TileMap, getVisibleTileRange, loadAllTiles } from './tiles';
 
 /**
- * Draw background and grid (in world space)
+ * Draw tiles (in world space)
  */
-function drawBackground(ctx: CanvasRenderingContext2D): void {
-  ctx.fillStyle = '#0B1020';
-  ctx.fillRect(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
+function drawTiles(ctx: CanvasRenderingContext2D, tileMap: TileMap, camera: Camera): void {
+  // Get visible tile range for optimization
+  const visibleRange = getVisibleTileRange(
+    camera.x, 
+    camera.y, 
+    camera.viewportWidth, 
+    camera.viewportHeight
+  );
 
+  // Draw only visible tiles
+  for (let tileY = visibleRange.startY; tileY <= visibleRange.endY; tileY++) {
+    for (let tileX = visibleRange.startX; tileX <= visibleRange.endX; tileX++) {
+      if (tileY >= 0 && tileY < tileMap.height && tileX >= 0 && tileX < tileMap.width) {
+        const tileId = tileMap.tiles[tileY][tileX];
+        const worldX = tileX * TILE_SIZE;
+        const worldY = tileY * TILE_SIZE;
+        
+        // Get tile image from cache
+        const tileImage = getTileImage(tileId);
+        if (tileImage) {
+          ctx.drawImage(tileImage, worldX, worldY, TILE_SIZE, TILE_SIZE);
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Draw grid overlay (in world space)
+ */
+function drawGrid(ctx: CanvasRenderingContext2D): void {
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
   ctx.lineWidth = 1 * VISUAL_SCALE;
   
@@ -33,6 +61,45 @@ function drawBackground(ctx: CanvasRenderingContext2D): void {
     ctx.lineTo(WORLD_WIDTH, y);
     ctx.stroke();
   }
+}
+
+// Cache for tile images
+const tileImageCache = new Map<string, HTMLImageElement>();
+
+/**
+ * Get tile image from cache or load it
+ */
+function getTileImage(tileId: string): HTMLImageElement | null {
+  if (tileImageCache.has(tileId)) {
+    return tileImageCache.get(tileId)!;
+  }
+  
+  // Try to load the image
+  const filename = getTileFilename(tileId);
+  if (filename) {
+    const img = new Image();
+    img.src = `/tiles/${filename}`;
+    img.onload = () => {
+      tileImageCache.set(tileId, img);
+    };
+    return img;
+  }
+  
+  return null;
+}
+
+/**
+ * Get filename for tile ID
+ */
+function getTileFilename(tileId: string): string | null {
+  const tileTypes = [
+    { id: 'grass_1', filename: 'tile_grass_1.png' },
+    { id: 'grass_2', filename: 'tile_grass_2.png' },
+    { id: 'grass_3', filename: 'tile_grass_3.png' },
+  ];
+  
+  const tileType = tileTypes.find(t => t.id === tileId);
+  return tileType ? tileType.filename : null;
 }
 
 /**
@@ -163,13 +230,15 @@ function drawWaveBanner(ctx: CanvasRenderingContext2D, waveState: WaveState): vo
   ctx.font = `bold ${16 * VISUAL_SCALE}px monospace`;
   ctx.textAlign = 'center';
   ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
-  ctx.lineWidth = 2 * VISUAL_SCALE;
+  ctx.lineWidth = 5;
   ctx.strokeText(`WAVE ${waveState.currentWave}`, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
   ctx.fillText(`WAVE ${waveState.currentWave}`, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
   
   if (waveState.currentModifier) {
     ctx.fillStyle = '#FF8844';
     ctx.font = `bold ${10 * VISUAL_SCALE}px monospace`;
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
+    ctx.lineWidth = 5;
     ctx.strokeText(waveState.currentModifier.name, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 12 * VISUAL_SCALE);
     ctx.fillText(waveState.currentModifier.name, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 12 * VISUAL_SCALE);
   }
@@ -186,7 +255,7 @@ export function drawWaveCompleteBanner(ctx: CanvasRenderingContext2D): void {
   ctx.font = `bold ${16 * VISUAL_SCALE}px monospace`;
   ctx.textAlign = 'center';
   ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
-  ctx.lineWidth = 2 * VISUAL_SCALE;
+  ctx.lineWidth = 5;
   ctx.strokeText('✓ Fala pokonana!', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
   ctx.fillText('✓ Fala pokonana!', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
   ctx.textAlign = 'left';
@@ -201,12 +270,14 @@ export function drawCountdown(ctx: CanvasRenderingContext2D, remaining: number):
   ctx.font = `bold ${14 * VISUAL_SCALE}px monospace`;
   ctx.textAlign = 'center';
   ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
-  ctx.lineWidth = 2 * VISUAL_SCALE;
+  ctx.lineWidth = 5;
   ctx.strokeText('Następna fala za', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 8 * VISUAL_SCALE);
   ctx.fillText('Następna fala za', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 8 * VISUAL_SCALE);
   
   ctx.fillStyle = '#FFD700';
   ctx.font = `bold ${24 * VISUAL_SCALE}px monospace`;
+  ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
+  ctx.lineWidth = 5;
   ctx.strokeText(`${remaining}`, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 16 * VISUAL_SCALE);
   ctx.fillText(`${remaining}`, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 16 * VISUAL_SCALE);
   ctx.textAlign = 'left';
@@ -221,7 +292,7 @@ export function drawGetReady(ctx: CanvasRenderingContext2D): void {
   ctx.font = `bold ${20 * VISUAL_SCALE}px monospace`;
   ctx.textAlign = 'center';
   ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
-  ctx.lineWidth = 2 * VISUAL_SCALE;
+  ctx.lineWidth = 5;
   ctx.strokeText('Przygotuj się...', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 4 * VISUAL_SCALE);
   ctx.fillText('Przygotuj się...', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 4 * VISUAL_SCALE);
   ctx.textAlign = 'left';
@@ -241,7 +312,8 @@ export function renderGameObjects(
   waveState: WaveState,
   screenShake: ScreenShake,
   cursor: Cursor,
-  camera: Camera
+  camera: Camera,
+  tileMap: TileMap
 ): void {
   const now = Date.now();
 
@@ -253,7 +325,8 @@ export function renderGameObjects(
   ctx.translate(-camera.x + viewportHalfW, -camera.y + viewportHalfH);
   ctx.translate(screenShake.offsetX, screenShake.offsetY);
 
-  drawBackground(ctx);
+  drawTiles(ctx, tileMap, camera);
+  drawGrid(ctx);
   drawXPOrbs(ctx, xpOrbs);
   drawBullets(ctx, bullets);
   drawEnemyProjectiles(ctx, enemyProjectiles);

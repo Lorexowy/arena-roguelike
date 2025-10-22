@@ -31,6 +31,7 @@ export let VISUAL_SCALE = typeof window !== 'undefined'
 export let GAMEPLAY_SCALE = VISUAL_SCALE;
 
 export const GRID_SIZE = 16;       // Grid spacing in pixels
+export const TILE_SIZE = 16;       // Tile size in pixels (16x16 tiles)
 
 // Function to update canvas dimensions
 export function updateCanvasDimensions(width: number, height: number): void {
@@ -198,4 +199,19 @@ export const HUD_CONFIG = {
 export const SHOP_ITEM_CONFIG = {
   regenDelayMs: 3000,        // 3 seconds without damage before regen starts
   lifestealCap: 0.5,         // Maximum 50% lifesteal
+};
+
+/**
+ * Tile system configuration
+ */
+export const TILE_CONFIG = {
+  // Tile types and their distribution percentages
+  tileTypes: [
+    { id: 'grass_1', filename: 'tile_grass_1.png', weight: 70 }, // 70% - plain grass
+    { id: 'grass_2', filename: 'tile_grass_2.png', weight: 15 }, // 15% - grass with bush #1
+    { id: 'grass_3', filename: 'tile_grass_3.png', weight: 15 }, // 15% - grass with bush #2
+  ],
+  
+  // Tile assets path
+  assetsPath: '/tiles/',
 };

@@ -22,6 +22,7 @@ import { handleBulletEnemyCollisions, handleEnemyPlayerCollisions, handleProject
 import { createScreenShake, triggerScreenShake, updateScreenShake } from '@/lib/game/systems/effects';
 import { renderGameObjects, drawWaveCompleteBanner, drawCountdown, drawGetReady } from '@/lib/game/systems/render';
 import { updateShooters, updateEnemyProjectiles } from '@/lib/game/systems/enemyProjectiles';
+import { generateTileMap, loadAllTiles, TileMap } from '@/lib/game/systems/tiles';
 import { initializeSounds, playMerchantArrivalSound } from '@/lib/game/audio/sounds';
 import { audioManager } from '@/lib/game/audio/audioManager';
 import { createDamageNumberPool, updateDamageNumbers, drawDamageNumbers } from '@/lib/game/systems/damageNumbers';
@@ -177,6 +178,9 @@ export default function GameCanvas({ onBackToMenu, selectedChampion }: GameCanva
     const damageNumbers = createDamageNumberPool();
     const moneyIndicators = createMoneyIndicatorPool();
     const upgradeCount = createUpgradeCount();
+    
+    // Initialize tile map
+    const tileMap = generateTileMap();
 
     let pendingUpgrades: Array<{ id: UpgradeId; tier: UpgradeTier }> = [];
     let currentRerollCost = 3; // Track reroll cost in game engine
@@ -428,7 +432,7 @@ export default function GameCanvas({ onBackToMenu, selectedChampion }: GameCanva
 
       // Render game objects (pixelated)
       ctx.imageSmoothingEnabled = false;
-      renderGameObjects(ctx, player, enemies, bullets, xpOrbs, enemyProjectiles, waveState, screenShake, cursor, camera);
+      renderGameObjects(ctx, player, enemies, bullets, xpOrbs, enemyProjectiles, waveState, screenShake, cursor, camera, tileMap);
 
       // Render state-specific overlays
       ctx.imageSmoothingEnabled = false;
@@ -497,6 +501,13 @@ export default function GameCanvas({ onBackToMenu, selectedChampion }: GameCanva
       
       resetPlayer(player, selectedChampion);
       resetCamera(camera);
+      
+      // Regenerate tile map for new game
+      const newTileMap = generateTileMap();
+      tileMap.tiles = newTileMap.tiles;
+      tileMap.width = newTileMap.width;
+      tileMap.height = newTileMap.height;
+      
       bullets.length = 0;
       enemies.length = 0;
       enemyProjectiles.length = 0;
