@@ -20,7 +20,7 @@ import { createWaveState, updateWaveBanner, checkWaveCleared, resetWaveState, st
 import { generateUpgradeChoices, applyUpgrade, getUpgradeInfo, UpgradeId, UpgradeTier } from '@/lib/game/systems/upgrades';
 import { handleBulletEnemyCollisions, handleEnemyPlayerCollisions, handleProjectilePlayerCollisions } from '@/lib/game/systems/collision';
 import { createScreenShake, triggerScreenShake, updateScreenShake } from '@/lib/game/systems/effects';
-import { renderGameObjects, drawWaveCompleteBanner, drawCountdown, drawGetReady } from '@/lib/game/systems/render';
+import { renderGameObjects, drawWaveCompleteBanner, drawCountdown, drawGetReady, preloadTiles } from '@/lib/game/systems/render';
 import { updateShooters, updateEnemyProjectiles } from '@/lib/game/systems/enemyProjectiles';
 import { generateTileMap, loadAllTiles, TileMap } from '@/lib/game/systems/tiles';
 import { initializeSounds, playMerchantArrivalSound } from '@/lib/game/audio/sounds';
@@ -89,6 +89,7 @@ export default function GameCanvas({ onBackToMenu, selectedChampion }: GameCanva
     money: 0,
     lifesteal: 0,
     killCount: 0,
+    fps: 0,
     upgradeCount: {
       multishot: 0,
       attackSpeed: 0,
@@ -144,6 +145,9 @@ export default function GameCanvas({ onBackToMenu, selectedChampion }: GameCanva
     // Initialize audio system (only once)
     initializeSounds().catch(console.error);
     
+    // Preload tile images
+    preloadTiles().catch(console.error);
+    
     // Set initial audio volumes from settings
     audioManager.updateConfig({
       masterVolume: settings.masterVolume / 100, // Convert 0-100 to 0.0-1.0
@@ -164,6 +168,11 @@ export default function GameCanvas({ onBackToMenu, selectedChampion }: GameCanva
     let lastFrameTime = Date.now(); // For delta time calculation
     const TARGET_FPS = 60;
     const FRAME_TIME = 1000 / TARGET_FPS; // ~16.67ms per frame
+    
+    // FPS tracking
+    let frameCount = 0;
+    let fpsStartTime = Date.now();
+    let currentFPS = 0;
 
     const player = createPlayer(selectedChampion);
     const bullets: Bullet[] = [];
@@ -452,6 +461,14 @@ export default function GameCanvas({ onBackToMenu, selectedChampion }: GameCanva
         drawMoneyIndicators(ctx, moneyIndicators, now, camera);
       }
 
+      // Update FPS counter
+      frameCount++;
+      if (now - fpsStartTime >= 1000) { // Update FPS every second
+        currentFPS = Math.round((frameCount * 1000) / (now - fpsStartTime));
+        frameCount = 0;
+        fpsStartTime = now;
+      }
+
       // Update HUD state for React
       if (Math.random() < 0.1) { // Update HUD state less frequently
         setHUDState({
@@ -471,6 +488,7 @@ export default function GameCanvas({ onBackToMenu, selectedChampion }: GameCanva
           money: player.money,
           lifesteal: player.lifesteal,
           killCount: player.killCount,
+          fps: currentFPS,
           upgradeCount: {
             multishot: upgradeCount.multishot,
             attackSpeed: upgradeCount.attackSpeed,

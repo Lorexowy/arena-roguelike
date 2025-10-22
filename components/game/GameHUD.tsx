@@ -31,6 +31,7 @@ interface GameHUDProps {
   lifesteal?: number;
   currentWave?: number;
   killCount?: number;
+  fps?: number;
   onOpenStats: () => void;
 }
 
@@ -51,6 +52,7 @@ export default function GameHUD({
   lifesteal = 0,
   currentWave = 1,
   killCount = 0,
+  fps = 0,
   onOpenStats,
 }: GameHUDProps) {
   const minutes = Math.floor(survivalTime / 60);
@@ -100,6 +102,12 @@ export default function GameHUD({
           <div className="hp-separator">/</div>
           <div className="hp-max">{displayMaxHealth}</div>
         </div>
+      </div>
+
+      {/* Top-Left: FPS Counter */}
+      <div className="hud-fps">
+        <div className="fps-label">FPS</div>
+        <div className="fps-value">{fps}</div>
       </div>
 
       {/* Top-Right: Time, Level, Money & Kills */}
@@ -256,6 +264,36 @@ export default function GameHUD({
         .hp-max {
           color: #999;
           font-size: 11px;
+        }
+
+        /* Top-Left: FPS Counter */
+        .hud-fps {
+          position: absolute;
+          top: 4px;
+          left: 4px;
+          text-align: left;
+          color: white;
+          text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+          background: rgba(0, 0, 0, 0.7);
+          padding: 6px 10px;
+          border-radius: 6px;
+          border: 2px solid rgba(255, 255, 255, 0.2);
+          min-width: 60px;
+        }
+
+        .fps-label {
+          font-size: 10px;
+          color: #888;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .fps-value {
+          font-size: 16px;
+          font-weight: 700;
+          color: #4ADE80;
+          margin-top: 2px;
         }
 
         /* Top-Right: Time & Level */

@@ -13,6 +13,13 @@ import { TileMap, getVisibleTileRange, loadAllTiles } from './tiles';
  * Draw tiles (in world space)
  */
 function drawTiles(ctx: CanvasRenderingContext2D, tileMap: TileMap, camera: Camera): void {
+  // Check if tiles are loaded, if not draw solid background
+  if (!tilesLoaded || tileImageCache.size === 0) {
+    ctx.fillStyle = '#0B1020';
+    ctx.fillRect(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
+    return;
+  }
+
   // Get visible tile range for optimization
   const visibleRange = getVisibleTileRange(
     camera.x, 
@@ -65,42 +72,47 @@ function drawGrid(ctx: CanvasRenderingContext2D): void {
 
 // Cache for tile images
 const tileImageCache = new Map<string, HTMLImageElement>();
+let tilesLoaded = false;
 
 /**
- * Get tile image from cache or load it
+ * Preload all tile images
  */
-function getTileImage(tileId: string): HTMLImageElement | null {
-  if (tileImageCache.has(tileId)) {
-    return tileImageCache.get(tileId)!;
-  }
+export async function preloadTiles(): Promise<void> {
+  if (tilesLoaded) return;
   
-  // Try to load the image
-  const filename = getTileFilename(tileId);
-  if (filename) {
-    const img = new Image();
-    img.src = `/tiles/${filename}`;
-    img.onload = () => {
-      tileImageCache.set(tileId, img);
-    };
-    return img;
-  }
-  
-  return null;
-}
-
-/**
- * Get filename for tile ID
- */
-function getTileFilename(tileId: string): string | null {
   const tileTypes = [
     { id: 'grass_1', filename: 'tile_grass_1.png' },
     { id: 'grass_2', filename: 'tile_grass_2.png' },
     { id: 'grass_3', filename: 'tile_grass_3.png' },
   ];
   
-  const tileType = tileTypes.find(t => t.id === tileId);
-  return tileType ? tileType.filename : null;
+  const loadPromises = tileTypes.map((tile) => {
+    return new Promise<void>((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        tileImageCache.set(tile.id, img);
+        resolve();
+      };
+      img.onerror = () => {
+        console.warn(`Failed to load tile: ${tile.filename}`);
+        resolve(); // Continue even if one tile fails
+      };
+      img.src = `/tiles/${tile.filename}`;
+    });
+  });
+  
+  await Promise.all(loadPromises);
+  tilesLoaded = true;
+  console.log('Tiles loaded successfully');
 }
+
+/**
+ * Get tile image from cache
+ */
+function getTileImage(tileId: string): HTMLImageElement | null {
+  return tileImageCache.get(tileId) || null;
+}
+
 
 /**
  * Draw XP orbs
