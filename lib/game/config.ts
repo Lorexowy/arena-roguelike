@@ -66,7 +66,7 @@ function getScaledStats() {
     },
     bullet: {
       speed: 4 * gameplayScale,  // Scaled for relative movement
-      damage: 1,
+      damage: 2,  // Increased damage to handle more enemies
       fireRate: 400,
       width: 3 * visualScale,  // Visual size
       height: 6 * visualScale,  // Visual size
@@ -74,10 +74,10 @@ function getScaledStats() {
     enemy: {
       chaser: {
         speed: 0.7 * gameplayScale,  // Scaled for relative movement
-        health: 3,
-        damage: 5,
+        health: 2,  // Low health but not one-shot
+        damage: 2,  // Reduced damage to compensate for more enemies
         size: 5 * visualScale,  // Visual size
-        xpValue: 10,
+        xpValue: 8,  // Slightly higher XP for more satisfying kills
       },
       shooter: {
         speed: 0.56 * gameplayScale,  // Scaled for relative movement
@@ -133,8 +133,8 @@ export const LEVEL_CONFIG = {
  * Wave system configuration
  */
 export const WAVE_CONFIG = {
-  wave1EnemyCount: 5,
-  enemyCountIncreasePerWave: 4, // Increased from 3 to 4
+  wave1EnemyCount: 12,  // Good starting amount
+  enemyCountIncreasePerWave: 25, // EXTREME scaling for maximum chaos
   modifierChance: 0.5,
   modifiers: [
     { name: 'Speed Boost', stat: 'speed', multiplier: 1.15 },

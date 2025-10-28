@@ -5,12 +5,13 @@
  */
 
 import { BASE_STATS, ECONOMY_CONFIG } from '../config';
-import { Bullet, Enemy, Player, XPOrb, DamageNumber, EnemyProjectile, WaveState } from '../types';
+import { Bullet, Enemy, Player, XPOrb, DamageNumber, EnemyProjectile, WaveState, GameTimeState } from '../types';
 import { damageEnemy } from './enemies';
 import { damagePlayer } from './player';
 import { spawnXPOrb } from './xp';
 import { spawnDamageNumber } from './damageNumbers';
 import { MoneyIndicator, spawnMoneyIndicator } from './moneyIndicators';
+import { incrementShopKillCounter } from './gameTime';
 
 /**
  * Circle-circle collision
@@ -50,6 +51,17 @@ export function calculateMoneyDrop(baseAmount: number, currentWave: number): num
 }
 
 /**
+ * Calculate scaled money drop based on game time (new system)
+ */
+export function calculateMoneyDropTimeBased(baseAmount: number, gameTime: number): number {
+  // Convert time to wave equivalent (every 30 seconds = 1 wave)
+  const waveEquivalent = Math.floor(gameTime / 30) + 1;
+  const intervals = Math.floor((waveEquivalent - ECONOMY_CONFIG.minWaveForScaling) / ECONOMY_CONFIG.moneyScalingWaves);
+  const multiplier = Math.pow(ECONOMY_CONFIG.moneyScalingMultiplier, intervals);
+  return Math.ceil(baseAmount * multiplier);
+}
+
+/**
  * Check and handle bullets vs enemies collisions
  * Returns money earned from kills and applies lifesteal
  */
@@ -61,6 +73,7 @@ export function handleBulletEnemyCollisions(
   moneyIndicators: MoneyIndicator[],
   player: Player,
   waveState: WaveState,
+  gameTimeState: GameTimeState,
   now: number
 ): number {
   let moneyEarned = 0;
@@ -96,6 +109,9 @@ export function handleBulletEnemyCollisions(
         if (enemyDied) {
           // Increment kill counter
           player.killCount++;
+          
+          // Increment shop kill counter
+          incrementShopKillCounter(gameTimeState);
           
           // Drop XP based on enemy type
           const xpValue = enemy.type === 'shooter' 

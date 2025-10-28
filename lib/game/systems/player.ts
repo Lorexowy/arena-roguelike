@@ -45,6 +45,14 @@ export function createPlayer(championId: ChampionId = 'sascha'): Player {
     championAttackSpeed: champion.stats.attackSpeed,
     runaansShots: 0,
     killCount: 0,
+    
+    // Initialize boost tracking
+    activeBoosts: {},
+    permanentBoosts: {
+      speed: 0,
+      damage: 0,
+      fireRate: 0,
+    },
   };
 }
 
@@ -173,6 +181,69 @@ export function resetPlayer(player: Player, championId: ChampionId = 'sascha'): 
   player.championAttackSpeed = champion.stats.attackSpeed;
   player.runaansShots = 0;
   player.killCount = 0;
+  
+  // Reset boost tracking
+  player.activeBoosts = {};
+  player.permanentBoosts = {
+    speed: 0,
+    damage: 0,
+    fireRate: 0,
+  };
+}
+
+/**
+ * Apply a temporary boost to the player
+ */
+export function applyTemporaryBoost(player: Player, statType: 'speed' | 'damage' | 'fireRate', amount: number, duration: number, now: number): void {
+  player.activeBoosts[statType] = {
+    amount: amount,
+    endTime: now + duration,
+  };
+}
+
+/**
+ * Apply a permanent boost to the player
+ */
+export function applyPermanentBoost(player: Player, statType: 'speed' | 'damage' | 'fireRate', amount: number): void {
+  player.permanentBoosts[statType] += amount;
+}
+
+/**
+ * Update active boosts (remove expired ones)
+ */
+export function updateActiveBoosts(player: Player, now: number): void {
+  for (const [statType, boost] of Object.entries(player.activeBoosts)) {
+    if (boost && now >= boost.endTime) {
+      delete player.activeBoosts[statType as keyof typeof player.activeBoosts];
+    }
+  }
+}
+
+/**
+ * Get effective speed multiplier including boosts
+ */
+export function getEffectiveSpeedMultiplier(player: Player): number {
+  const permanentBoost = player.permanentBoosts.speed;
+  const temporaryBoost = player.activeBoosts.speed?.amount || 0;
+  return player.speedMultiplier + permanentBoost + temporaryBoost;
+}
+
+/**
+ * Get effective damage multiplier including boosts
+ */
+export function getEffectiveDamageMultiplier(player: Player): number {
+  const permanentBoost = player.permanentBoosts.damage;
+  const temporaryBoost = player.activeBoosts.damage?.amount || 0;
+  return player.damageMultiplier + permanentBoost + temporaryBoost;
+}
+
+/**
+ * Get effective fire rate multiplier including boosts
+ */
+export function getEffectiveFireRateMultiplier(player: Player): number {
+  const permanentBoost = player.permanentBoosts.fireRate;
+  const temporaryBoost = player.activeBoosts.fireRate?.amount || 0;
+  return player.fireRateMultiplier + permanentBoost + temporaryBoost;
 }
 
 /**

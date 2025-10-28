@@ -5,7 +5,8 @@
  */
 
 import { BASE_STATS, WORLD_WIDTH, WORLD_HEIGHT, ENEMY_SCALING_CONFIG, GAMEPLAY_SCALE } from '../config';
-import { Enemy, Player, WaveState, EnemyType } from '../types';
+import { Enemy, Player, WaveState, EnemyType, GameTimeState } from '../types';
+import { calculateTimeBasedEnemyStats } from './gameTime';
 
 /**
  * Calculate scaled enemy stats based on current wave
@@ -82,15 +83,78 @@ export function spawnEnemy(enemies: Enemy[], waveState: WaveState, type: EnemyTy
     speed: enemySpeed,
     damage: Math.ceil(enemyDamage),
     type,
-    lastShotTime: type === 'shooter' ? 0 : undefined,
     size: scaledStats.size,
     xpValue: scaledStats.xpValue,
-    shootCooldown: scaledStats.shootCooldown,
-    preferredDistance: scaledStats.preferredDistance,
-    distanceThreshold: scaledStats.distanceThreshold,
   });
 
   waveState.enemiesSpawned++;
+}
+
+/**
+ * Spawn enemies using time-based scaling (chasers only)
+ * Spawns multiple enemies per call for Vampire Survivors intensity
+ */
+export function spawnEnemyTimeBased(enemies: Enemy[], gameTimeState: GameTimeState, type: 'chaser' = 'chaser'): void {
+  // Get time-based scaled stats
+  const scaledStats = calculateTimeBasedEnemyStats(type, gameTimeState.gameTime);
+  
+  // Calculate how many enemies to spawn based on game time
+  // Start with 1, gradually increase to 2-3 enemies per spawn
+  const timeMinutes = gameTimeState.gameTime / 60;
+  const baseSpawnCount = 1;
+  const additionalSpawns = Math.floor(timeMinutes * 0.2); // +0.2 enemies per minute (slower growth)
+  const spawnCount = Math.min(baseSpawnCount + additionalSpawns, 3); // Cap at 3 enemies per spawn
+  
+  // Spawn multiple enemies
+  for (let i = 0; i < spawnCount; i++) {
+    const edge = Math.floor(Math.random() * 4);
+    const offscreenDistance = 20 + Math.random() * 20; // 20-40px beyond edge
+    let x = 0, y = 0;
+
+    switch (edge) {
+      case 0: // Top
+        x = Math.random() * WORLD_WIDTH; 
+        y = -scaledStats.size - offscreenDistance;
+        break;
+      case 1: // Right
+        x = WORLD_WIDTH + scaledStats.size + offscreenDistance; 
+        y = Math.random() * WORLD_HEIGHT;
+        break;
+      case 2: // Bottom
+        x = Math.random() * WORLD_WIDTH; 
+        y = WORLD_HEIGHT + scaledStats.size + offscreenDistance;
+        break;
+      case 3: // Left
+        x = -scaledStats.size - offscreenDistance; 
+        y = Math.random() * WORLD_HEIGHT;
+        break;
+    }
+    
+    // Apply time-based modifiers
+    let enemySpeed = scaledStats.speed;
+    let enemyHealth = scaledStats.health;
+    let enemyDamage = scaledStats.damage;
+
+    if (gameTimeState.currentModifier) {
+      const mod = gameTimeState.currentModifier;
+      if (mod.stat === 'speed') enemySpeed *= mod.multiplier;
+      if (mod.stat === 'health') enemyHealth *= mod.multiplier;
+      if (mod.stat === 'damage') enemyDamage *= mod.multiplier;
+    }
+
+    enemies.push({
+      x,
+      y,
+      health: Math.ceil(enemyHealth),
+      maxHealth: Math.ceil(enemyHealth),
+      hitFlashEndTime: 0,
+      speed: enemySpeed,
+      damage: Math.ceil(enemyDamage),
+      type,
+      size: scaledStats.size,
+      xpValue: scaledStats.xpValue,
+    });
+  }
 }
 
 /**

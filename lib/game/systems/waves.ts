@@ -130,9 +130,9 @@ export function prepareNextWave(waveState: WaveState): void {
   waveState.currentWave++;
 
   // Calculate shooters for this wave
-  // Wave 3: 2 shooters, Wave 5: 3, Wave 7: 4, etc.
-  if (waveState.currentWave >= 3) {
-    waveState.shootersToSpawn = 2 + Math.floor((waveState.currentWave - 3) / 2);
+  // Wave 4: 1 shooter, Wave 6: 2, Wave 8: 3, etc. (reduced spawn rate)
+  if (waveState.currentWave >= 4) {
+    waveState.shootersToSpawn = 1 + Math.floor((waveState.currentWave - 4) / 2);
   } else {
     waveState.shootersToSpawn = 0;
   }

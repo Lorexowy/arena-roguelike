@@ -22,15 +22,27 @@ export interface Bullet {
   distanceTraveled?: number; // Track distance for range limiting
 }
 
-export interface EnemyProjectile {
+// Removed EnemyProjectile - only chasers now
+
+export type EnemyType = 'chaser';
+
+export type ChestRarity = 'common' | 'uncommon' | 'rare' | 'legendary';
+
+export interface Chest {
   x: number;
   y: number;
-  vx: number;
-  vy: number;
-  damage: number;
+  rarity: ChestRarity;
+  isOpened: boolean;
+  openingStartTime?: number;
+  reward?: ChestReward;
 }
 
-export type EnemyType = 'chaser' | 'shooter';
+export interface ChestReward {
+  type: 'money' | 'xp' | 'health' | 'temporary_boost' | 'permanent_boost';
+  amount: number;
+  duration?: number; // For temporary boosts
+  statType?: 'damage' | 'speed' | 'fireRate';
+}
 
 export interface Enemy {
   x: number;
@@ -41,12 +53,8 @@ export interface Enemy {
   speed: number;
   damage: number;
   type: EnemyType;
-  lastShotTime?: number; // For shooters
   size?: number;
   xpValue?: number;
-  shootCooldown?: number;
-  preferredDistance?: number;
-  distanceThreshold?: number;
 }
 
 export interface XPOrb {
@@ -99,6 +107,31 @@ export interface Player {
   championAttackSpeed: number; // Champion's base attack speed value
   runaansShots: number;        // Number of auto-targeting shots from Runaan's Hurricane
   killCount: number;           // Total enemies killed in this run
+  
+  // Boost tracking
+  activeBoosts: {
+    speed?: { amount: number; endTime: number };
+    damage?: { amount: number; endTime: number };
+    fireRate?: { amount: number; endTime: number };
+  };
+  permanentBoosts: {
+    speed: number;
+    damage: number;
+    fireRate: number;
+  };
+}
+
+export interface GameTimeState {
+  gameTime: number;           // Total time since start (seconds)
+  enemySpawnTimer: number;    // Time until next enemy spawn (seconds)
+  enemySpawnInterval: number; // Current spawn interval (seconds)
+  enemyCount: number;         // Current enemy count for scaling
+  killsSinceLastShop: number; // Kills since last shop appeared
+  chestTimer: number;         // Time until next chest spawn (seconds)
+  chestSpawnInterval: number; // Current chest spawn interval (seconds)
+  currentModifier: WaveModifier | null; // Current time-based modifier
+  modifierEndTime: number;    // When current modifier ends
+  shopAvailableUntil: number; // Timestamp when shop availability expires (0 = not available)
 }
 
 export interface WaveState {

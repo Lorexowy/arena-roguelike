@@ -6,8 +6,9 @@
  */
 
 import { CANVAS_WIDTH, CANVAS_HEIGHT, GRID_SIZE, BASE_STATS, VISUAL_SCALE, WORLD_WIDTH, WORLD_HEIGHT, TILE_SIZE } from '../config';
-import { Player, Enemy, Bullet, XPOrb, WaveState, ScreenShake, Cursor, EnemyProjectile, Camera } from '../types';
+import { Player, Enemy, Bullet, XPOrb, WaveState, ScreenShake, Cursor, Camera, Chest } from '../types';
 import { TileMap, getVisibleTileRange, loadAllTiles } from './tiles';
+import { CHEST_CONFIG, getChestFilename } from './chests';
 
 /**
  * Draw tiles (in world space)
@@ -75,7 +76,7 @@ const tileImageCache = new Map<string, HTMLImageElement>();
 let tilesLoaded = false;
 
 /**
- * Preload all tile images
+ * Preload all tile images and chest images
  */
 export async function preloadTiles(): Promise<void> {
   if (tilesLoaded) return;
@@ -86,24 +87,47 @@ export async function preloadTiles(): Promise<void> {
     { id: 'grass_3', filename: 'tile_grass_3.png' },
   ];
   
-  const loadPromises = tileTypes.map((tile) => {
-    return new Promise<void>((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => {
-        tileImageCache.set(tile.id, img);
-        resolve();
-      };
-      img.onerror = () => {
-        console.warn(`Failed to load tile: ${tile.filename}`);
-        resolve(); // Continue even if one tile fails
-      };
-      img.src = `/tiles/${tile.filename}`;
-    });
-  });
+  const chestTypes = [
+    { id: 'common', filename: 'chest_common.png' },
+    { id: 'uncommon', filename: 'chest_uncommon.png' },
+    { id: 'rare', filename: 'chest_rare.png' },
+    { id: 'legendary', filename: 'chest_legendary.png' },
+  ];
+  
+  const loadPromises = [
+    ...tileTypes.map((tile) => {
+      return new Promise<void>((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          tileImageCache.set(tile.id, img);
+          resolve();
+        };
+        img.onerror = () => {
+          console.warn(`Failed to load tile: ${tile.filename}`);
+          resolve(); // Continue even if one tile fails
+        };
+        img.src = `/tiles/${tile.filename}`;
+      });
+    }),
+    ...chestTypes.map((chest) => {
+      return new Promise<void>((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          chestImageCache.set(chest.id, img);
+          resolve();
+        };
+        img.onerror = () => {
+          console.warn(`Failed to load chest: ${chest.filename}`);
+          resolve(); // Continue even if one chest fails
+        };
+        img.src = `/chests/${chest.filename}`;
+      });
+    }),
+  ];
   
   await Promise.all(loadPromises);
   tilesLoaded = true;
-  console.log('Tiles loaded successfully');
+  console.log('Tiles and chests loaded successfully');
 }
 
 /**
@@ -112,6 +136,119 @@ export async function preloadTiles(): Promise<void> {
 function getTileImage(tileId: string): HTMLImageElement | null {
   return tileImageCache.get(tileId) || null;
 }
+
+/**
+ * Draw chests
+ */
+function drawChests(ctx: CanvasRenderingContext2D, chests: Chest[], now: number): void {
+  for (const chest of chests) {
+    if (chest.isOpened && chest.openingStartTime) {
+      // Draw opening animation
+      const openingProgress = Math.min(1, (now - chest.openingStartTime) / CHEST_CONFIG.openingDuration);
+      drawOpeningChest(ctx, chest, openingProgress);
+    } else {
+      // Draw closed chest
+      drawClosedChest(ctx, chest);
+    }
+  }
+}
+
+/**
+ * Draw a closed chest
+ */
+function drawClosedChest(ctx: CanvasRenderingContext2D, chest: Chest): void {
+  const chestImage = getChestImage(chest.rarity);
+  const size = CHEST_CONFIG.chestSize;
+  
+  if (chestImage) {
+    ctx.drawImage(chestImage, chest.x - size/2, chest.y - size/2, size, size);
+  } else {
+    // Fallback: draw colored rectangle
+    const colors = {
+      common: '#8B4513',    // Brown
+      uncommon: '#4169E1',  // Blue
+      rare: '#8A2BE2',      // Purple
+      legendary: '#FFD700', // Gold
+    };
+    
+    ctx.fillStyle = colors[chest.rarity];
+    ctx.fillRect(chest.x - size/2, chest.y - size/2, size, size);
+    
+    // Add glow effect
+    ctx.shadowColor = colors[chest.rarity];
+    ctx.shadowBlur = 10;
+    ctx.fillRect(chest.x - size/2, chest.y - size/2, size, size);
+    ctx.shadowBlur = 0;
+  }
+}
+
+/**
+ * Draw opening chest animation
+ */
+function drawOpeningChest(ctx: CanvasRenderingContext2D, chest: Chest, progress: number): void {
+  const size = CHEST_CONFIG.chestSize;
+  const chestImage = getChestImage(chest.rarity);
+  
+  // Draw chest with opening animation
+  if (chestImage) {
+    // Simple opening effect - scale and rotate slightly
+    const scale = 1 + progress * 0.2;
+    const rotation = progress * 0.1;
+    
+    ctx.save();
+    ctx.translate(chest.x, chest.y);
+    ctx.rotate(rotation);
+    ctx.scale(scale, scale);
+    ctx.drawImage(chestImage, -size/2, -size/2, size, size);
+    ctx.restore();
+  } else {
+    // Fallback with animation
+    const colors = {
+      common: '#8B4513',
+      uncommon: '#4169E1',
+      rare: '#8A2BE2',
+      legendary: '#FFD700',
+    };
+    
+    const animatedSize = size * (1 + progress * 0.2);
+    ctx.fillStyle = colors[chest.rarity];
+    ctx.fillRect(chest.x - animatedSize/2, chest.y - animatedSize/2, animatedSize, animatedSize);
+  }
+  
+  // Add sparkle effects
+  if (progress > 0.5) {
+    drawSparkles(ctx, chest, progress);
+  }
+}
+
+/**
+ * Draw sparkle effects around chest
+ */
+function drawSparkles(ctx: CanvasRenderingContext2D, chest: Chest, progress: number): void {
+  const sparkleCount = Math.floor(progress * 12); // More sparkles for larger chests
+  
+  for (let i = 0; i < sparkleCount; i++) {
+    const angle = (i / sparkleCount) * Math.PI * 2;
+    const distance = 40 + Math.sin(progress * Math.PI) * 20; // Scaled up distance
+    const x = chest.x + Math.cos(angle) * distance;
+    const y = chest.y + Math.sin(angle) * distance;
+    
+    ctx.fillStyle = '#FFFFFF';
+    ctx.beginPath();
+    ctx.arc(x, y, 4, 0, Math.PI * 2); // Larger sparkles
+    ctx.fill();
+  }
+}
+
+/**
+ * Get chest image from cache
+ */
+function getChestImage(rarity: string): HTMLImageElement | null {
+  return chestImageCache.get(rarity) || null;
+}
+
+// Cache for chest images
+const chestImageCache = new Map<string, HTMLImageElement>();
 
 
 /**
@@ -153,14 +290,12 @@ function drawBullets(ctx: CanvasRenderingContext2D, bullets: Bullet[]): void {
 function drawEnemies(ctx: CanvasRenderingContext2D, enemies: Enemy[], now: number): void {
   for (const enemy of enemies) {
     const isFlashing = now < enemy.hitFlashEndTime;
-    const size = enemy.type === 'shooter' ? BASE_STATS.enemy.shooter.size : BASE_STATS.enemy.chaser.size;
+    const size = enemy.size || BASE_STATS.enemy.chaser.size;
     
     // Color based on type
     let fillColor: string;
     if (isFlashing) {
       fillColor = '#FFFFFF';
-    } else if (enemy.type === 'shooter') {
-      fillColor = '#38BDF8'; // Blue for shooters
     } else {
       fillColor = '#FF4444'; // Red for chasers
     }
@@ -320,12 +455,12 @@ export function renderGameObjects(
   enemies: Enemy[],
   bullets: Bullet[],
   xpOrbs: XPOrb[],
-  enemyProjectiles: EnemyProjectile[],
   waveState: WaveState,
   screenShake: ScreenShake,
   cursor: Cursor,
   camera: Camera,
-  tileMap: TileMap
+  tileMap: TileMap,
+  chests: Chest[]
 ): void {
   const now = Date.now();
 
@@ -339,9 +474,10 @@ export function renderGameObjects(
 
   drawTiles(ctx, tileMap, camera);
   drawGrid(ctx);
+  drawChests(ctx, chests, now);
   drawXPOrbs(ctx, xpOrbs);
   drawBullets(ctx, bullets);
-  drawEnemyProjectiles(ctx, enemyProjectiles);
+  // Removed enemy projectiles - only chasers now
   drawEnemies(ctx, enemies, now);
   drawPlayer(ctx, player, now);
   drawCrosshair(ctx, cursor);
@@ -352,22 +488,5 @@ export function renderGameObjects(
   drawWaveBanner(ctx, waveState);
 }
 
-/**
- * Draw enemy projectiles
- */
-function drawEnemyProjectiles(ctx: CanvasRenderingContext2D, projectiles: EnemyProjectile[]): void {
-  const size = BASE_STATS.enemy.shooter.projectileSize;
-  
-  for (const proj of projectiles) {
-    // Draw glowing blue orb
-    ctx.fillStyle = '#60A5FA'; // Light blue
-    ctx.strokeStyle = '#0B0F1A'; // Dark outline
-    ctx.lineWidth = 1;
-    
-    ctx.beginPath();
-    ctx.arc(proj.x, proj.y, size, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-  }
-}
+// Removed drawEnemyProjectiles - only chasers now
 

@@ -4,29 +4,32 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 
 // Configuration and types
 import { BASE_STATS, CANVAS_WIDTH, CANVAS_HEIGHT, updateCanvasDimensions, GAMEPLAY_SCALE } from '@/lib/game/config';
-import { GameState, Bullet, Enemy, XPOrb, EnemyProjectile } from '@/lib/game/types';
+import { GameState, Bullet, Enemy, XPOrb } from '@/lib/game/types';
 import { ChampionId } from '@/lib/game/champions/catalog';
 import { GameSettings, loadSettings, saveSettings } from '@/lib/game/settings';
 
 // Game systems
-import { createPlayer, updatePlayerMovement, updatePlayerIframes, addXP, resetPlayer, getPlayerSpeed, getPlayerSpeedDisplay, updatePlayerRegeneration } from '@/lib/game/systems/player';
+import { createPlayer, updatePlayerMovement, updatePlayerIframes, addXP, resetPlayer, getPlayerSpeed, getPlayerSpeedDisplay, updatePlayerRegeneration, updateActiveBoosts } from '@/lib/game/systems/player';
+import { createGameTimeState, updateGameTimeState, shouldSpawnEnemy, resetEnemySpawnTimer, shouldSpawnChest, resetChestSpawnTimer, shouldShopAppear as shouldShopAppearKillBased, resetShopKillCounter, incrementShopKillCounter, makeShopAvailable, isShopAvailable, hasShopAvailabilityExpired, clearShopAvailability, getShopAvailabilityRemaining, shouldApplyModifier, applyRandomModifier, resetGameTimeState, TIME_CONFIG } from '@/lib/game/systems/gameTime';
 import { createKeyState, createCursor, setupKeyboardListeners, setupMouseListeners } from '@/lib/game/systems/input';
 import { createCamera, updateCamera, resetCamera } from '@/lib/game/systems/camera';
 import { spawnBullets, updateBullets } from '@/lib/game/systems/bullets';
 import { spawnRunaansShots, shouldFireRunaansShots } from '@/lib/game/systems/runaansHurricane';
-import { spawnEnemy, updateEnemies } from '@/lib/game/systems/enemies';
+import { spawnEnemy, spawnEnemyTimeBased, updateEnemies } from '@/lib/game/systems/enemies';
 import { updateXPOrbs } from '@/lib/game/systems/xp';
 import { createWaveState, updateWaveBanner, checkWaveCleared, resetWaveState, startWaveBreak, updateBreakCountdown, startNextWave, prepareNextWave, pauseBreak, resumeBreak } from '@/lib/game/systems/waves';
 import { generateUpgradeChoices, applyUpgrade, getUpgradeInfo, UpgradeId, UpgradeTier } from '@/lib/game/systems/upgrades';
-import { handleBulletEnemyCollisions, handleEnemyPlayerCollisions, handleProjectilePlayerCollisions } from '@/lib/game/systems/collision';
+import { handleBulletEnemyCollisions, handleEnemyPlayerCollisions, calculateMoneyDropTimeBased } from '@/lib/game/systems/collision';
 import { createScreenShake, triggerScreenShake, updateScreenShake } from '@/lib/game/systems/effects';
 import { renderGameObjects, drawWaveCompleteBanner, drawCountdown, drawGetReady, preloadTiles } from '@/lib/game/systems/render';
-import { updateShooters, updateEnemyProjectiles } from '@/lib/game/systems/enemyProjectiles';
+// Removed shooter projectiles - only chasers now
 import { generateTileMap, loadAllTiles, TileMap } from '@/lib/game/systems/tiles';
+import { spawnChestsForWave, spawnChestsTimeBased, checkChestCollision, startChestOpening, isChestOpeningComplete, applyChestReward, isPlayerStillNearChest, cancelChestOpening, Chest } from '@/lib/game/systems/chests';
 import { initializeSounds, playMerchantArrivalSound } from '@/lib/game/audio/sounds';
 import { audioManager } from '@/lib/game/audio/audioManager';
 import { createDamageNumberPool, updateDamageNumbers, drawDamageNumbers } from '@/lib/game/systems/damageNumbers';
 import { createMoneyIndicatorPool, updateMoneyIndicators, drawMoneyIndicators } from '@/lib/game/systems/moneyIndicators';
+import { createRewardIndicatorPool, spawnRewardIndicator, updateRewardIndicators, drawRewardIndicators } from '@/lib/game/systems/rewardIndicators';
 import { createUpgradeCount } from '@/lib/game/systems/hud';
 
 // UI Components
@@ -70,6 +73,7 @@ export default function GameCanvas({ onBackToMenu, selectedChampion }: GameCanva
   // Shop state
   const [shopState, setShopState] = useState<ShopState>(createShopState());
   const [showShopBanner, setShowShopBanner] = useState(false);
+  const [shopAvailabilityRemaining, setShopAvailabilityRemaining] = useState(0);
   
   // HUD state (updated every frame)
   const [hudState, setHUDState] = useState({
@@ -90,6 +94,7 @@ export default function GameCanvas({ onBackToMenu, selectedChampion }: GameCanva
     lifesteal: 0,
     killCount: 0,
     fps: 0,
+    shopKillsRemaining: 70,
     upgradeCount: {
       multishot: 0,
       attackSpeed: 0,
@@ -177,15 +182,17 @@ export default function GameCanvas({ onBackToMenu, selectedChampion }: GameCanva
     const player = createPlayer(selectedChampion);
     const bullets: Bullet[] = [];
     const enemies: Enemy[] = [];
-    const enemyProjectiles: EnemyProjectile[] = [];
     const xpOrbs: XPOrb[] = [];
+    const chests: Chest[] = [];
     const waveState = createWaveState();
+    const gameTimeState = createGameTimeState();
     const screenShake = createScreenShake();
     const camera = createCamera();
     const cursor = createCursor();
     const keys = createKeyState();
     const damageNumbers = createDamageNumberPool();
     const moneyIndicators = createMoneyIndicatorPool();
+    const rewardIndicators = createRewardIndicatorPool();
     const upgradeCount = createUpgradeCount();
     
     // Initialize tile map
@@ -281,61 +288,21 @@ export default function GameCanvas({ onBackToMenu, selectedChampion }: GameCanva
       // Handle intro states (no gameplay)
       if (gameState === 'intro') return;
 
-      // Handle "Get Ready" state
+      // Handle "Get Ready" state - start the game immediately
       if (gameState === 'getready') {
         if (now >= getReadyEndTime) {
-          gameState = 'countdown';
-          // Don't call prepareNextWave for first wave (already at wave 1)
-          startWaveBreak(waveState, now);
+          gameState = 'playing';
+          // Start the time-based system
+          resetGameTimeState(gameTimeState);
         }
         return;
       }
 
-      // Handle wave complete state (show banner, then start break countdown)
-      if (gameState === 'waveComplete') {
-        if (now >= waveCompleteEndTime) {
-          gameState = 'countdown';
-          prepareNextWave(waveState);
-          startWaveBreak(waveState, now);
-        }
-        // Continue with game logic during wave complete banner
-      }
-
-      // Handle countdown state (break between waves) - game continues running
-      if (gameState === 'countdown') {
-        // Check if shop should appear (once per break)
-        if (!waveState.shopBannerShown) {
-          const shouldAppear = shouldShopAppear(internalShopState, waveState.currentWave);
-          waveState.shopAvailable = shouldAppear;
-          waveState.shopBannerShown = true; // Mark as checked regardless of result
-          updateShopAppearance(internalShopState, shouldAppear);
-          
-          if (shouldAppear) {
-            // Play merchant arrival sound
-            playMerchantArrivalSound();
-            
-            // Trigger shop banner in React
-            win.arenaShopAvailable?.();
-          }
-        }
-        
-        // Update break countdown (deadline-based)
-        const breakComplete = updateBreakCountdown(waveState, now);
-        if (breakComplete) {
-          // Break naturally completed - start next wave
-          gameState = 'playing';
-          startNextWave(waveState, now);
-          // Reset shop flags for next break
-          waveState.shopAvailable = false;
-          waveState.shopBannerShown = false;
-          // Hide shop banner in React
-          win.arenaHideShopBanner?.();
-        }
-        // Continue with game logic during countdown
-      }
-
       // Pause checks (only for levelup, gameover, and manual pause)
       if (gameState === 'levelup' || gameState === 'gameover' || isPaused) return;
+
+      // Update time-based system
+      updateGameTimeState(gameTimeState, deltaTime);
       updateWaveBanner(waveState, now);
       updatePlayerIframes(player, now);
       updatePlayerMovement(player, keys, deltaTime);
@@ -355,24 +322,42 @@ export default function GameCanvas({ onBackToMenu, selectedChampion }: GameCanva
 
       updateBullets(bullets, deltaTime);
 
-      // Spawn chasers
-      if (waveState.waveActive && 
-          waveState.enemiesSpawned < waveState.enemiesToSpawn) {
-        spawnEnemy(enemies, waveState, 'chaser');
+      // Time-based enemy spawning (chasers only)
+      if (shouldSpawnEnemy(gameTimeState)) {
+        spawnEnemyTimeBased(enemies, gameTimeState, 'chaser');
+        resetEnemySpawnTimer(gameTimeState);
       }
 
-      // Spawn shooters (starting wave 3)
-      if (waveState.waveActive && 
-          waveState.shootersSpawned < waveState.shootersToSpawn) {
-        spawnEnemy(enemies, waveState, 'shooter');
-        waveState.shootersSpawned++;
+      // Time-based chest spawning
+      if (shouldSpawnChest(gameTimeState)) {
+        const newChests = spawnChestsTimeBased(player.x, player.y);
+        chests.push(...newChests);
+        resetChestSpawnTimer(gameTimeState);
+      }
+
+      // Kill-based shop system
+      if (shouldShopAppearKillBased(gameTimeState)) {
+        // For kill-based system, make shop available for 5 seconds when kill threshold is met
+        makeShopAvailable(gameTimeState, now);
+        playMerchantArrivalSound();
+        win.arenaShopAvailable?.();
+        resetShopKillCounter(gameTimeState);
+      }
+
+      // Check if shop availability has expired
+      if (hasShopAvailabilityExpired(gameTimeState, now)) {
+        clearShopAvailability(gameTimeState);
+        win.arenaHideShopBanner?.();
+      }
+
+      // Apply time-based modifiers
+      if (shouldApplyModifier(gameTimeState)) {
+        applyRandomModifier(gameTimeState);
       }
 
       updateEnemies(enemies, player, deltaTime);
       
-      // Update shooters and their projectiles
-      updateShooters(enemies, enemyProjectiles, player, now, waveState.currentWave);
-      updateEnemyProjectiles(enemyProjectiles, deltaTime);
+      // No more shooter projectiles - only chasers
 
       const xpCollected = updateXPOrbs(xpOrbs, player, deltaTime);
       if (xpCollected > 0) {
@@ -382,29 +367,50 @@ export default function GameCanvas({ onBackToMenu, selectedChampion }: GameCanva
         }
       }
 
-      // Handle collisions and earn money
-      const moneyEarned = handleBulletEnemyCollisions(bullets, enemies, xpOrbs, damageNumbers, moneyIndicators, player, waveState, now);
+      // Check chest collisions
+      
+      for (let i = chests.length - 1; i >= 0; i--) {
+        const chest = chests[i];
+        if (!chest.isOpened && checkChestCollision(player, chest)) {
+          startChestOpening(chest, now);
+          // TODO: Play chest opening sound
+        } else if (chest.isOpened) {
+          // Check if player is still near the chest during opening
+          if (!isPlayerStillNearChest(player, chest)) {
+            // Player moved away, cancel opening
+            cancelChestOpening(chest);
+          } else if (isChestOpeningComplete(chest, now) && chest.reward) {
+            // Opening complete, apply reward
+            applyChestReward(chest.reward, player);
+            
+            // Spawn reward indicator
+            spawnRewardIndicator(rewardIndicators, chest.x, chest.y, chest.reward, now);
+            
+            chests.splice(i, 1); // Remove chest after rewarding
+          }
+        }
+      }
+
+      // Handle collisions and earn money (time-based scaling)
+      const moneyEarned = handleBulletEnemyCollisions(bullets, enemies, xpOrbs, damageNumbers, moneyIndicators, player, waveState, gameTimeState, now);
       player.money += moneyEarned;
       
       // Update HP regeneration
       updatePlayerRegeneration(player, now, deltaTime);
       
-      const playerDiedFromEnemy = handleEnemyPlayerCollisions(enemies, player, damageNumbers, now);
-      const playerDiedFromProjectile = handleProjectilePlayerCollisions(enemyProjectiles, player, damageNumbers, now);
+      // Update active boosts (remove expired ones)
+      updateActiveBoosts(player, now);
       
-      if (playerDiedFromEnemy || playerDiedFromProjectile) {
+      const playerDiedFromEnemy = handleEnemyPlayerCollisions(enemies, player, damageNumbers, now);
+      
+      if (playerDiedFromEnemy) {
         gameState = 'gameover';
         if (!settings.disableScreenShake) {
           triggerScreenShake(screenShake);
         }
       }
 
-      // Check if wave cleared
-      const waveCleared = checkWaveCleared(waveState, enemies.length);
-      if (waveCleared) {
-        gameState = 'waveComplete';
-        waveCompleteEndTime = now + 2000; // Show "Wave Complete" for 2s
-      }
+      // No more wave clearing - continuous gameplay
       
       if (!settings.disableScreenShake) {
         updateScreenShake(screenShake, now);
@@ -416,6 +422,7 @@ export default function GameCanvas({ onBackToMenu, selectedChampion }: GameCanva
       
       updateDamageNumbers(damageNumbers, now, deltaTime);
       updateMoneyIndicators(moneyIndicators, now, deltaTime);
+      updateRewardIndicators(rewardIndicators, now);
     };
 
     const gameLoop = () => {
@@ -441,7 +448,7 @@ export default function GameCanvas({ onBackToMenu, selectedChampion }: GameCanva
 
       // Render game objects (pixelated)
       ctx.imageSmoothingEnabled = false;
-      renderGameObjects(ctx, player, enemies, bullets, xpOrbs, enemyProjectiles, waveState, screenShake, cursor, camera, tileMap);
+      renderGameObjects(ctx, player, enemies, bullets, xpOrbs, waveState, screenShake, cursor, camera, tileMap, chests);
 
       // Render state-specific overlays
       ctx.imageSmoothingEnabled = false;
@@ -454,11 +461,12 @@ export default function GameCanvas({ onBackToMenu, selectedChampion }: GameCanva
         drawWaveCompleteBanner(ctx);
       }
 
-      // Render damage numbers and money indicators (crisp)
+      // Render damage numbers, money indicators, and reward indicators (crisp)
       ctx.imageSmoothingEnabled = true;
       if (!settings.reduceMotion) {
         drawDamageNumbers(ctx, damageNumbers, now, camera);
         drawMoneyIndicators(ctx, moneyIndicators, now, camera);
+        drawRewardIndicators(ctx, rewardIndicators, now, camera);
       }
 
       // Update FPS counter
@@ -482,13 +490,14 @@ export default function GameCanvas({ onBackToMenu, selectedChampion }: GameCanva
           moveSpeed: getPlayerSpeedDisplay(player),  // Use display version for HUD
           damage: player.championDamage,
           multishot: player.multishot,
-          currentWave: waveState.currentWave,
+          currentWave: Math.floor(gameTimeState.gameTime / 30) + 1, // Convert time to "wave equivalent"
           magnetRadius: (BASE_STATS.xp.magnetRadius * player.magnetMultiplier) / GAMEPLAY_SCALE,  // Unscale for display
           critChance: player.critChance,
           money: player.money,
           lifesteal: player.lifesteal,
           killCount: player.killCount,
           fps: currentFPS,
+          shopKillsRemaining: Math.max(0, TIME_CONFIG.shopKillThreshold - gameTimeState.killsSinceLastShop),
           upgradeCount: {
             multishot: upgradeCount.multishot,
             attackSpeed: upgradeCount.attackSpeed,
@@ -498,6 +507,13 @@ export default function GameCanvas({ onBackToMenu, selectedChampion }: GameCanva
             critChance: upgradeCount.critChance,
           },
         });
+        
+        // Update shop availability
+        const remaining = getShopAvailabilityRemaining(gameTimeState, now);
+        setShopAvailabilityRemaining(remaining);
+        
+        // Update shop banner visibility
+        setShowShopBanner(remaining > 0);
       }
 
       animationFrameId = requestAnimationFrame(gameLoop);
@@ -528,13 +544,22 @@ export default function GameCanvas({ onBackToMenu, selectedChampion }: GameCanva
       
       bullets.length = 0;
       enemies.length = 0;
-      enemyProjectiles.length = 0;
       xpOrbs.length = 0;
+      chests.length = 0;
       pendingUpgrades.length = 0;
       resetWaveState(waveState);
+      resetGameTimeState(gameTimeState);
+      
+      // Spawn initial chests
+      const newChests = spawnChestsForWave(player.x, player.y);
+      chests.push(...newChests);
       
       for (const dn of damageNumbers) {
         dn.active = false;
+      }
+      
+      for (const ri of rewardIndicators) {
+        ri.active = false;
       }
 
       upgradeCount.multishot = 0;
@@ -794,6 +819,13 @@ export default function GameCanvas({ onBackToMenu, selectedChampion }: GameCanva
     interface WindowWithGameAPI extends Window {
       arenaOpenShop?: () => void;
     }
+    
+    // Check if shop is still available
+    if (shopAvailabilityRemaining <= 0) {
+      console.log('Shop is no longer available');
+      return;
+    }
+    
     setShowShopBanner(false);
     setModalState('shop');
     (window as unknown as WindowWithGameAPI).arenaOpenShop?.();
@@ -865,11 +897,15 @@ export default function GameCanvas({ onBackToMenu, selectedChampion }: GameCanva
         <div className="shop-banner">
           <div className="shop-banner-content">
             <h3 className="shop-banner-title">🏪 Merchant has arrived!</h3>
+            <p className="shop-banner-timer">
+              {shopAvailabilityRemaining > 0 ? `${shopAvailabilityRemaining}s remaining` : 'Expired'}
+            </p>
             <button 
               className="shop-banner-button"
               onClick={handleOpenShop}
+              disabled={shopAvailabilityRemaining <= 0}
             >
-              Open Shop
+              {shopAvailabilityRemaining > 0 ? 'Open Shop' : 'Shop Expired'}
             </button>
           </div>
         </div>
@@ -1188,8 +1224,17 @@ export default function GameCanvas({ onBackToMenu, selectedChampion }: GameCanva
           font-size: 24px;
           font-weight: 800;
           color: #FFD700;
-          margin: 0 0 16px 0;
+          margin: 0 0 8px 0;
           text-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+        }
+
+        .shop-banner-timer {
+          font-size: 16px;
+          font-weight: 600;
+          color: #FF6B6B;
+          margin: 0 0 16px 0;
+          text-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
+          font-family: monospace;
         }
 
         .shop-banner-button {
@@ -1205,9 +1250,16 @@ export default function GameCanvas({ onBackToMenu, selectedChampion }: GameCanva
           font-family: inherit;
         }
 
-        .shop-banner-button:hover {
+        .shop-banner-button:hover:not(:disabled) {
           transform: translateY(-2px);
           box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
+        }
+
+        .shop-banner-button:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+          background: #6B7280;
+          border-color: #9CA3AF;
         }
 
         @keyframes fadeIn {

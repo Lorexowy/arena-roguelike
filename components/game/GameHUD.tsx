@@ -32,6 +32,7 @@ interface GameHUDProps {
   currentWave?: number;
   killCount?: number;
   fps?: number;
+  shopKillsRemaining?: number;
   onOpenStats: () => void;
 }
 
@@ -53,6 +54,7 @@ export default function GameHUD({
   currentWave = 1,
   killCount = 0,
   fps = 0,
+  shopKillsRemaining = 70,
   onOpenStats,
 }: GameHUDProps) {
   const minutes = Math.floor(survivalTime / 60);
@@ -108,6 +110,12 @@ export default function GameHUD({
       <div className="hud-fps">
         <div className="fps-label">FPS</div>
         <div className="fps-value">{fps}</div>
+      </div>
+
+      {/* Top-Left: Mission Container */}
+      <div className="hud-mission">
+        <div className="mission-label">Current mission:</div>
+        <div className="mission-text">Next shop: {shopKillsRemaining} kills</div>
       </div>
 
       {/* Top-Right: Time, Level, Money & Kills */}
@@ -294,6 +302,37 @@ export default function GameHUD({
           font-weight: 700;
           color: #4ADE80;
           margin-top: 2px;
+        }
+
+        /* Top-Left: Mission Container */
+        .hud-mission {
+          position: absolute;
+          top: 60px;
+          left: 4px;
+          text-align: left;
+          color: white;
+          text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+          background: rgba(0, 0, 0, 0.7);
+          padding: 6px 10px;
+          border-radius: 6px;
+          border: 2px solid rgba(255, 215, 0, 0.3);
+          min-width: 140px;
+        }
+
+        .mission-label {
+          font-size: 10px;
+          color: #FFD700;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          margin-bottom: 2px;
+        }
+
+        .mission-text {
+          font-size: 12px;
+          font-weight: 700;
+          color: #FFD700;
+          text-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
         }
 
         /* Top-Right: Time & Level */
